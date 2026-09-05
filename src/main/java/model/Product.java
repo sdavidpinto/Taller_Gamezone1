@@ -1,4 +1,4 @@
-package com.gamezone.model;
+package model;
 
 public abstract class Product {
 
