@@ -22,5 +22,10 @@ public abstract class Product {
     public void setAvailableQuantity(int availableQuantity) {
         this.availableQuantity = availableQuantity;
     }
+
     public abstract String getDescription();
+
+    public void mostrar() {
+        System.out.println(getDescription());
+    }
 }

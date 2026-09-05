@@ -7,7 +7,7 @@ public class Console extends Product {
     private String generation;
 
     public Console(String identifier, String title, double price, int availableQuantity,
-                    String brand, String model, String generation) {
+                   String brand, String model, String generation) {
         super(identifier, title, price, availableQuantity);
         this.brand = brand;
         this.model = model;
