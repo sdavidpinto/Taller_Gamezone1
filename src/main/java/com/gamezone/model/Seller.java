@@ -25,4 +25,10 @@ public class Seller extends Person {
     public void setShift(String shift) {
         this.shift = shift;
     }
+    
+    @Override
+    public String display() {
+    return "Seller: " + getName() + " | ID: " + getIdNumber() + " | Phone: " 
+    + getPhone() + " | Employee code: " + employeeCode + " | Shift: " + shift;
+}
 }

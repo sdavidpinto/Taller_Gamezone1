@@ -28,4 +28,10 @@ public class Client extends Person {
     public void addSale(Sale sale) {
         salesHistory.add(sale);
     }
+    
+    @Override
+    public String display() {
+    return "Client: " + getName() + " | ID: " + getIdNumber() + " | Phone: " 
+    + getPhone() + " | Email: " + email + " | Purchases: " + salesHistory.size();
+}
 }
