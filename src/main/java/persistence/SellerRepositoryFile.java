@@ -9,8 +9,6 @@ import java.util.List;
 /**
  * Implementación de SellerRepository que guarda y lee los vendedores en un
  * archivo de texto, una línea por vendedor, en formato clave-valor:
- *
- *   idNumber: 1065555555; name: Carla Ruiz; phone: 3009999999; employeeCode: E01; shift: mañana
  */
 public class SellerRepositoryFile implements SellerRepository {
 
