@@ -1,4 +1,8 @@
 package com.gamezone.model;
+/**
+ * Representa a un vendedor que atiende clientes y registra ventas.
+ * Un vendedor tiene un código de empleado y un turno de trabajo asignado.
+ */
 public class Seller extends Person {
 
     private String employeeCode;
@@ -25,7 +29,12 @@ public class Seller extends Person {
     public void setShift(String shift) {
         this.shift = shift;
     }
-    
+ /**
+ * Construye una representación en texto de la información del vendedor,
+ * incluyendo nombre, identificación, teléfono, código de empleado y turno.
+ *
+ * @return una cadena de texto formateada describiendo al vendedor
+ */   
     @Override
     public String display() {
     return "Seller: " + getName() + " | ID: " + getIdNumber() + " | Phone: " 

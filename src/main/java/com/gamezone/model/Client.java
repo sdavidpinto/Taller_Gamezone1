@@ -1,7 +1,11 @@
 package com.gamezone.model;
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * Representa a un cliente que compra productos en la tienda.
+ * Un cliente tiene un correo electrónico y mantiene un historial
+ * de las ventas en las que ha participado.
+ */
 public class Client extends Person {
 
     private String email;
@@ -28,7 +32,12 @@ public class Client extends Person {
     public void addSale(Sale sale) {
         salesHistory.add(sale);
     }
-    
+ /**
+ * Construye una representación en texto de la información del cliente,
+ * incluyendo nombre, identificación, teléfono, correo y número de compras.
+ *
+ * @return una cadena de texto formateada describiendo al cliente
+ */
     @Override
     public String display() {
     return "Client: " + getName() + " | ID: " + getIdNumber() + " | Phone: " 
