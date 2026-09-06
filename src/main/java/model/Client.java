@@ -1,4 +1,5 @@
-package com.gamezone.model;
+package model;
+
 import java.util.ArrayList;
 import java.util.List;
 /**

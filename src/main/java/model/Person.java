@@ -1,4 +1,4 @@
-package com.gamezone.model;
+package model;
 /**
  * Representa a una persona genérica que interactúa con la tienda.
  * Esta clase es abstracta porque toda persona debe especializarse

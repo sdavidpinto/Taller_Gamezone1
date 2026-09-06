@@ -1,4 +1,4 @@
-package com.gamezone.model;
+package model;
 /**
  * Representa a un vendedor que atiende clientes y registra ventas.
  * Un vendedor tiene un código de empleado y un turno de trabajo asignado.
