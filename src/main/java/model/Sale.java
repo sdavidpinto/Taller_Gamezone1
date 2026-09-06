@@ -17,13 +17,15 @@ import java.util.List;
  * 
  */
 public class Sale {
+    private String code;
     private LocalDate date;
     private final Client client;
     private final Seller seller;
     private List<Product> products=new ArrayList<>();
     double total;
 
-    public Sale(Date date, Client client, Seller seller, List<Product> products) {
+    public Sale(String code,Date date, Client client, Seller seller, List<Product> products) {
+        this.code=code;
         this.date = LocalDate.now();
         this.client = client;
         this.seller = seller;
@@ -36,6 +38,12 @@ public class Sale {
  * Setters y getters por cada atributo mencionado
  */
     
+    
+    
+    public String getCode() {
+        return code;
+    }
+
     public LocalDate getDate() {
         return date;
     }
@@ -91,7 +99,8 @@ public class Sale {
         productosStr.append("  - ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
     }
 
-    return "Sale date: " + date + "\n" +
+    return "code: "+code+"\n"+
+           "Sale date: " + date + "\n" +
            "Client: " + client.getName() + "\n" +
            "Seller: " + seller.getName() + "\n" +
            "Products:\n" + productosStr +
