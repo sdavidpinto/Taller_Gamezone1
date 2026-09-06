@@ -1,9 +1,9 @@
 package model;
 
 /**
- * Represents a generic product in the GameZone inventory system.
- * This is an abstract base class that provides common attributes and methods 
- * for specific product types.
+ * Representa un producto genérico en el sistema de inventario de GameZone.
+ * Esta clase base abstracta define los atributos y métodos comunes para 
+ * todos los tipos de productos del sistema.
  */
 public abstract class Product {
 
@@ -13,12 +13,12 @@ public abstract class Product {
     private int availableQuantity;
 
     /**
-     * Constructs a new Product with the specified details.
+     * Construye una nueva instancia de Producto con los detalles especificados.
      * 
-     * @param identifier The unique identifier of the product.
-     * @param title The name or title of the product.
-     * @param price The price of the product.
-     * @param availableQuantity The stock quantity available for the product.
+     * @param identifier El identificador único del producto.
+     * @param title El título o nombre del producto.
+     * @param price El precio unitario del producto.
+     * @param availableQuantity La cantidad disponible en inventario.
      */
     protected Product(String identifier, String title, double price, int availableQuantity) {
         this.identifier = identifier;
@@ -28,51 +28,51 @@ public abstract class Product {
     }
 
     /**
-     * Gets the unique identifier of the product.
+     * Obtiene el identificador único del producto.
      * 
-     * @return The product identifier.
+     * @return El identificador del producto.
      */
     public String getIdentifier() { return identifier; }
 
     /**
-     * Gets the title or name of the product.
+     * Obtiene el título o nombre del producto.
      * 
-     * @return The product title.
+     * @return El título del producto.
      */
     public String getTitle() { return title; }
 
     /**
-     * Gets the price of the product.
+     * Obtiene el precio del producto.
      * 
-     * @return The product price.
+     * @return El precio del producto.
      */
     public double getPrice() { return price; }
 
     /**
-     * Gets the available quantity of the product in stock.
+     * Obtiene la cantidad disponible en inventario.
      * 
-     * @return The available quantity.
+     * @return La cantidad disponible.
      */
     public int getAvailableQuantity() { return availableQuantity; }
 
     /**
-     * Updates the available quantity of the product in stock.
+     * Establece la cantidad disponible en inventario.
      * 
-     * @param availableQuantity The new quantity to set.
+     * @param availableQuantity La nueva cantidad a asignar.
      */
     public void setAvailableQuantity(int availableQuantity) {
         this.availableQuantity = availableQuantity;
     }
 
     /**
-     * Generates a formatted string containing the product's details.
+     * Genera una descripción formateada del producto.
      * 
-     * @return A string representation of the product description.
+     * @return Una cadena de texto con los detalles del producto.
      */
     public abstract String getDescription();
 
     /**
-     * Prints the product's description directly to the standard output (console).
+     * Muestra la descripción del producto directamente en la consola.
      */
     public void mostrar() {
         System.out.println(getDescription());

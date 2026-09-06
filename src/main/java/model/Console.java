@@ -1,8 +1,8 @@
 package model;
 
 /**
- * Represents a video game console product in the inventory.
- * Extends the base Product class with console-specific attributes.
+ * Representa un producto de tipo consola de videojuegos.
+ * Extiende la clase Product para incluir atributos específicos de consolas.
  */
 public class Console extends Product {
 
@@ -11,15 +11,15 @@ public class Console extends Product {
     private String generation;
 
     /**
-     * Constructs a new Console with the specified details.
+     * Construye una nueva instancia de Console con los detalles especificados.
      *
-     * @param identifier The unique identifier of the console.
-     * @param title The name of the console.
-     * @param price The price of the console.
-     * @param availableQuantity The stock quantity available.
-     * @param brand The brand or manufacturer of the console (e.g., Sony, Microsoft).
-     * @param model The specific model of the console.
-     * @param generation The generation of the console.
+     * @param identifier El identificador único de la consola.
+     * @param title El nombre de la consola.
+     * @param price El precio de la consola.
+     * @param availableQuantity La cantidad disponible en inventario.
+     * @param brand La marca o fabricante de la consola.
+     * @param model El modelo específico de la consola.
+     * @param generation La generación a la que pertenece la consola.
      */
     public Console(String identifier, String title, double price, int availableQuantity,
                    String brand, String model, String generation) {
@@ -30,30 +30,30 @@ public class Console extends Product {
     }
 
     /**
-     * Gets the brand of the console.
+     * Obtiene la marca de la consola.
      * 
-     * @return The console brand.
+     * @return La marca de la consola.
      */
     public String getBrand() { return brand; }
 
     /**
-     * Gets the specific model of the console.
+     * Obtiene el modelo de la consola.
      * 
-     * @return The console model.
+     * @return El modelo de la consola.
      */
     public String getModel() { return model; }
 
     /**
-     * Gets the generation of the console.
+     * Obtiene la generación de la consola.
      * 
-     * @return The console generation.
+     * @return La generación de la consola.
      */
     public String getGeneration() { return generation; }
 
     /**
-     * Generates a formatted string containing the console's specific details.
+     * Genera una descripción formateada con los detalles específicos de la consola.
      * 
-     * @return A string representation of the console description.
+     * @return Una cadena de texto formateada con los datos de la consola.
      */
     @Override
     public String getDescription() {

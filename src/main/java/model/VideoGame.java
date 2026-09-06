@@ -1,8 +1,8 @@
 package model;
 
 /**
- * Represents a video game product in the inventory.
- * Extends the base Product class with game-specific attributes.
+ * Representa un producto de tipo videojuego.
+ * Extiende la clase Product para incluir atributos específicos de videojuegos.
  */
 public class VideoGame extends Product {
 
@@ -11,15 +11,15 @@ public class VideoGame extends Product {
     private String ageRating;
 
     /**
-     * Constructs a new VideoGame with the specified details.
+     * Construye una nueva instancia de VideoGame con los detalles especificados.
      *
-     * @param identifier The unique identifier of the video game.
-     * @param title The title of the video game.
-     * @param price The price of the video game.
-     * @param availableQuantity The stock quantity available.
-     * @param platform The platform the game is played on (e.g., PC, PlayStation).
-     * @param genre The genre of the video game (e.g., Action, RPG).
-     * @param ageRating The age rating of the video game (e.g., E, T, M).
+     * @param identifier El identificador único del videojuego.
+     * @param title El título del videojuego.
+     * @param price El precio del videojuego.
+     * @param availableQuantity La cantidad disponible en inventario.
+     * @param platform La plataforma en la que se ejecuta el videojuego.
+     * @param genre El género del videojuego.
+     * @param ageRating La clasificación por edad del videojuego.
      */
     public VideoGame(String identifier, String title, double price, int availableQuantity,
                      String platform, String genre, String ageRating) {
@@ -30,30 +30,30 @@ public class VideoGame extends Product {
     }
 
     /**
-     * Gets the platform of the video game.
+     * Obtiene la plataforma del videojuego.
      * 
-     * @return The video game platform.
+     * @return La plataforma del videojuego.
      */
     public String getPlatform() { return platform; }
 
     /**
-     * Gets the genre of the video game.
+     * Obtiene el género del videojuego.
      * 
-     * @return The video game genre.
+     * @return El género del videojuego.
      */
     public String getGenre() { return genre; }
 
     /**
-     * Gets the age rating of the video game.
+     * Obtiene la clasificación por edad del videojuego.
      * 
-     * @return The video game age rating.
+     * @return La clasificación por edad.
      */
     public String getAgeRating() { return ageRating; }
 
     /**
-     * Generates a formatted string containing the video game's specific details.
+     * Genera una descripción formateada con los detalles específicos del videojuego.
      * 
-     * @return A string representation of the video game description.
+     * @return Una cadena de texto formateada con los datos del videojuego.
      */
     @Override
     public String getDescription() {
