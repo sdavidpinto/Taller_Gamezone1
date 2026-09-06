@@ -7,29 +7,38 @@ import java.util.Date;
 import java.util.List;
 
 /**
- *
- * @author Samue
+ *   Class Sale: Una clase que relaciona a un cliente con una cantidad de productos a comprar y lo registra como una venta en un momento determinado
+ * 
+ * Date:fecha en la que se realizo la venta
+ * client: Instancia de Client que compro los productos
+ * Seller: Instancia de Seller que vendio el producto
+ * products: Arraylist que tiene la lista de productos de la venta
+ * total: Cantidad de dinero obtenido por la compra
+ * 
  */
 public class Sale {
-    private LocalDate Date;
+    private LocalDate date;
     private final Client client;
     private final Seller seller;
     private List<Product> products=new ArrayList<>();
     double total;
 
-    public Sale(Date Date, Client client, Seller seller, List<Product> products, double total) {
-        this.Date = LocalDate.now();
+    public Sale(Date date, Client client, Seller seller, List<Product> products) {
+        this.date = LocalDate.now();
         this.client = client;
         this.seller = seller;
         this.products =products;
-        this.total = total;
-    }
-
-    public LocalDate getDate() {
-        return Date;
+        this.total = calculateTotal(products);
     }
 
     
+    /**
+ * Setters y getters por cada atributo mencionado
+ */
+    
+    public LocalDate getDate() {
+        return date;
+    }
 
     public Client getClient() {
         return client;
@@ -47,8 +56,10 @@ public class Sale {
         return total;
     }
 
-    public void setDate(LocalDate Date) {
-        this.Date = Date;
+    
+    
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 
     public void setProducts(List<Product> products) {
@@ -59,8 +70,33 @@ public class Sale {
         this.total = total;
     }
 
+    /**
+ * Metodo calculateTotal para determinar el precio de la venta y enviarlo como parametro de el constructor
+ */
     
-    
+    public double calculateTotal(List<Product> products){
+        double Total=0;
+        if (products == null) return 0;
+        for (Product product : products) {
+            Total=Total+product.getPrice();
+        }
+        return Total;
+    }
+/**
+ * Metodo Display para mostrar la venta cuando se consulte por codigo
+ */
+    public String Display() {
+    StringBuilder productosStr = new StringBuilder();
+    for (Product product : products) {
+        productosStr.append("  - ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
+    }
+
+    return "Sale date: " + date + "\n" +
+           "Client: " + client.getName() + "\n" +
+           "Seller: " + seller.getName() + "\n" +
+           "Products:\n" + productosStr +
+           "Total: $" + total;
+}
     
     
     
