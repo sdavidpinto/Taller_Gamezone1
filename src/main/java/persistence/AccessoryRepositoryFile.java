@@ -65,4 +65,19 @@ public class AccessoryRepositoryFile implements AccessoryRepository{
         return null;
     }
     
+    @Override
+    public List<Accessory> findAll() {
+        List<Accessory> accessory = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (!linea.isBlank()) {
+                    accessory.add(parseLine(linea));
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error leyendo accesorios de: " + filePath, e);
+        }
+        return accessory;
+    }
 }
