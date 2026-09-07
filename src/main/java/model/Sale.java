@@ -101,8 +101,8 @@ public class Sale {
 
     return "code: "+code+"\n"+
            "Sale date: " + date + "\n" +
-           "Client: " + client.getName() + "\n" +
-           "Seller: " + seller.getName() + "\n" +
+           "Client: " + client.getIdNumber()+ "\n" +
+           "Seller: " + seller.getIdNumber()+ "\n" +
            "Products:\n" + productosStr +
            "Total: $" + total;
 }
