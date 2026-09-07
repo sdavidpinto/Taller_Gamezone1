@@ -98,4 +98,14 @@ public class AccessoryRepositoryFile implements AccessoryRepository{
         return encontrado;
     }
     
+    @Override
+    public boolean deleteByIdentifier(String identifier) {
+        List<Accessory> accessory = findAll();
+        boolean eliminado = accessory.removeIf(p -> p.getIdentifier() != null && p.getIdentifier().equals(identifier));
+        if (eliminado) {
+            rewriteFile(accessory);
+        }
+        return eliminado;
+    }
+    
 }
