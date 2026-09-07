@@ -1,0 +1,2 @@
+type: VideoGame; identifier: V01; title: Minecraft; price: 3000.0; stock: 2; platform: PC; genre: rpg; ageRating: 13
+type: Console; identifier: PS1; title: PLAY 5; price: 500000.0; stock: 21; brand: playstation; model: 5; generation: 5

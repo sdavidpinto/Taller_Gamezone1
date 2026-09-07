@@ -526,9 +526,9 @@ public class MenuUI {
         List<Sale> ventas = saleService.findAll();
         JTextArea salida = new JTextArea(20, 70);
         JScrollPane tabla = new JScrollPane(salida);
-        salida.setText("code\tdate\t\tclient\t\tseller\t\ttotal\n");
+        salida.setText("code\tdate\tclient\tseller\ttotal\n");
         for (Sale s : ventas) {
-            salida.append(s.getCode() + "\t" + s.getDate() + "\t"
+            salida.append(s.getCode()+ "\t" + s.getDate()+ "\t"
                     + s.getClient().getName() + "\t" + s.getSeller().getName()
                     + "\t$" + s.getTotal() + "\n");
         }
