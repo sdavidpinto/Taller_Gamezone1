@@ -61,6 +61,7 @@ public class Main {
         ClientRepository clientRepository = new ClientRepositoryFile(dataFile("clients.txt"));
         SellerRepository sellerRepository = new SellerRepositoryFile(dataFile("sellers.txt"));
         ProductRepository productRepository = new ProductRepositoryFile(dataFile("products.txt"));
+        AccessoryRepository AccesoryRepository = new AccessoryRepositoryFile(dataFile("Accesories.txt"));
         SaleRepository saleRepository = new SaleRepositoryFile(
                 dataFile("sales.txt"),
                 clientRepository::findByIdNumber,
@@ -71,7 +72,8 @@ public class Main {
         ClientService clientService = new ClientService(clientRepository);
         SellerService sellerService = new SellerService(sellerRepository);
         ProductService productService = new ProductService(productRepository);
-        SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository);
+        AccessoryRepository AccesoryRepository = new AccessoryService(AccessoryRepository);
+        SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository,AccessoryRepository);
 
         // --- Capa ui: recibe los services por constructor ---
         MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService);
