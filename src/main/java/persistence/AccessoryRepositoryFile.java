@@ -101,11 +101,22 @@ public class AccessoryRepositoryFile implements AccessoryRepository{
     @Override
     public boolean deleteByIdentifier(String identifier) {
         List<Accessory> accessory = findAll();
-        boolean eliminado = accessory.removeIf(p -> p.getIdentifier() != null && p.getIdentifier().equals(identifier));
+        boolean eliminado = accessory.removeIf(a -> a.getIdentifier() != null && a.getIdentifier().equals(identifier));
         if (eliminado) {
             rewriteFile(accessory);
         }
         return eliminado;
+    }
+    
+    private void rewriteFile(List<Accessory> accessory) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
+            for (Accessory a : accessory) {
+                bw.write(toLine(a));
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error reescribiendo accesorios en: " + filePath, e);
+        }
     }
     
 }
