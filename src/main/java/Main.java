@@ -7,10 +7,10 @@ import persistence.SaleRepository;
 import persistence.SaleRepositoryFile;
 import persistence.SellerRepository;
 import persistence.SellerRepositoryFile;
-import service.ClientService;
+import services.ClientService;
 import service.ProductService;
-import service.SaleService;
-import service.SellerService;
+import services.SaleService;
+import services.SellerService;
 import ui.MenuUI;
 
 /**
@@ -78,3 +78,4 @@ public class Main {
         menu.start();
     }
 }
+
