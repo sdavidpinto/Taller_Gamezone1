@@ -55,4 +55,14 @@ public class AccessoryRepositoryFile implements AccessoryRepository{
         }
     }
     
+    @Override
+    public Accessory findByIdentifier(String identifier) {
+        for (Accessory a : findAll()) {
+            if (a.getIdentifier() != null && a.getIdentifier().equals(identifier)) {
+                return a;
+            }
+        }
+        return null;
+    }
+    
 }
