@@ -80,4 +80,22 @@ public class AccessoryRepositoryFile implements AccessoryRepository{
         }
         return accessory;
     }
+    
+    @Override
+    public boolean update(Accessory accessory) {
+        List<Accessory> accessory = findAll();
+        boolean encontrado = false;
+        for (int i = 0; i < accessory.size(); i++) {
+            if (accessory.get(i).getIdentifier().equals(accessory.getIdentifier())) {
+                accessory.set(i, accessory);
+                encontrado = true;
+                break;
+            }
+        }
+        if (encontrado) {
+            rewriteFile(accessory);
+        }
+        return encontrado;
+    }
+    
 }
