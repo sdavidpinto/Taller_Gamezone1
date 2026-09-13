@@ -116,4 +116,17 @@ public class AccessoryService {
     public boolean deleteAccessory(String identifier) {
         return accessoryRepository.deleteByIdentifier(identifier);
     }
+    
+    public List<Accessory> findByType(String type) {
+        return findAll().stream()
+                .filter(a -> a.getClass().getSimpleName().equalsIgnoreCase(type))
+                .toList();
+    }
+
+    public List<Accessory> findCompatibleWithConsoleBrand(String brand) {
+        return findAll().stream()
+                .filter(a -> a.getBrand() != null && a.getBrand().equalsIgnoreCase(brand))
+                .toList();
+    }
+    
 }
