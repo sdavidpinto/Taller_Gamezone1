@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * File-based implementation of AccessoryRepository.
- * Stores and retrieves accessories (Cable, Controller, Memory) from a text file.
+ * Implementación de AccessoryRepository basada en archivos.
+ * Guarda y recupera accesorios (Cable, Controller, Memory) desde un archivo de texto.
  */
 public class AccessoryRepositoryFile implements AccessoryRepository {
 
@@ -23,8 +23,8 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
     }
 
     /**
-     * Ensures the persistence file exists before using it.
-     * Creates the parent folder (e.g. "data/") if it does not exist yet.
+     * Se asegura de que el archivo de persistencia exista antes de usarlo.
+     * Crea la carpeta contenedora (por ejemplo "data/") si aún no existe.
      */
     private void createFileIfNotExists() {
         File file = new File(filePath);
@@ -36,27 +36,40 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
             try {
                 file.createNewFile();
             } catch (IOException e) {
-                throw new RuntimeException("Could not create file: " + filePath, e);
+                throw new RuntimeException("No se pudo crear el archivo: " + filePath, e);
             }
         }
     }
 
+    /**
+     * Guarda un nuevo accesorio en el archivo.
+     *
+     * @param accessory el accesorio a guardar
+     * @throws IllegalArgumentException si el accesorio es nulo o si ya
+     *         existe un accesorio con el mismo identificador
+     */
     @Override
     public void save(Accessory accessory) {
         if (accessory == null) {
-            throw new IllegalArgumentException("The accessory cannot be null");
+            throw new IllegalArgumentException("El accesorio no puede ser nulo");
         }
         if (findByIdentifier(accessory.getIdentifier()) != null) {
-            throw new IllegalArgumentException("An accessory already exists with identifier: " + accessory.getIdentifier());
+            throw new IllegalArgumentException("Ya existe un accesorio con identifier: " + accessory.getIdentifier());
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
             bw.write(toLine(accessory));
             bw.newLine();
         } catch (IOException e) {
-            throw new RuntimeException("Error saving accessory to: " + filePath, e);
+            throw new RuntimeException("Error guardando accesorio en: " + filePath, e);
         }
     }
 
+    /**
+     * Busca un accesorio por su identificador único.
+     *
+     * @param identifier el identificador a buscar
+     * @return el accesorio con ese identificador, o null si no se encuentra
+     */
     @Override
     public Accessory findByIdentifier(String identifier) {
         for (Accessory a : findAll()) {
@@ -67,6 +80,11 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
         return null;
     }
 
+    /**
+     * Retorna todos los accesorios almacenados en el archivo.
+     *
+     * @return una lista con todos los accesorios
+     */
     @Override
     public List<Accessory> findAll() {
         List<Accessory> accessories = new ArrayList<>();
@@ -78,11 +96,17 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error reading accessories from: " + filePath, e);
+            throw new RuntimeException("Error leyendo accesorios de: " + filePath, e);
         }
         return accessories;
     }
 
+    /**
+     * Actualiza la información de un accesorio existente.
+     *
+     * @param accessory el accesorio con los datos actualizados
+     * @return true si se encontró y actualizó, false en caso contrario
+     */
     @Override
     public boolean update(Accessory accessory) {
         List<Accessory> accessories = findAll();
@@ -100,6 +124,12 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
         return found;
     }
 
+    /**
+     * Elimina un accesorio por su identificador único.
+     *
+     * @param identifier el identificador del accesorio a eliminar
+     * @return true si se encontró y eliminó, false en caso contrario
+     */
     @Override
     public boolean deleteByIdentifier(String identifier) {
         List<Accessory> accessories = findAll();
@@ -110,6 +140,12 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
         return deleted;
     }
 
+    /**
+     * Reescribe todo el archivo con la lista de accesorios dada.
+     * Se usa como estrategia simple para reflejar actualizaciones y eliminaciones.
+     *
+     * @param accessories la lista completa de accesorios a escribir
+     */
     private void rewriteFile(List<Accessory> accessories) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
             for (Accessory a : accessories) {
@@ -117,10 +153,18 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
                 bw.newLine();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error rewriting accessories in: " + filePath, e);
+            throw new RuntimeException("Error reescribiendo accesorios en: " + filePath, e);
         }
     }
 
+    /**
+     * Convierte un accesorio en una línea de texto para persistirlo,
+     * incluyendo una etiqueta de tipo para poder reconstruirlo después.
+     *
+     * @param a el accesorio a convertir
+     * @return la línea de texto correspondiente
+     * @throws IllegalArgumentException si el tipo de accesorio no es soportado
+     */
     private String toLine(Accessory a) {
         if (a instanceof Cable ca) {
             return "type: Cable"
@@ -149,9 +193,17 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
                     + "; memoryType: " + m.getMemoryType()
                     + "; storage: " + m.getStorage();
         }
-        throw new IllegalArgumentException("Unsupported accessory type for persistence: " + a.getClass());
+        throw new IllegalArgumentException("Tipo de accesorio no soportado para persistencia: " + a.getClass());
     }
 
+    /**
+     * Reconstruye un objeto Accessory a partir de una línea de texto,
+     * identificando el tipo concreto mediante la etiqueta "type".
+     *
+     * @param line la línea de texto a interpretar
+     * @return el objeto Accessory reconstruido (Cable, Controller o Memory)
+     * @throws IllegalStateException si el tipo indicado en la línea es desconocido
+     */
     private Accessory parseLine(String line) {
         String[] parts = line.split(";");
         String type = value(parts[0]);
@@ -173,9 +225,15 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
             int storage = Integer.parseInt(value(parts[7]));
             return new Memory(identifier, title, price, stock, brand, memoryType, storage);
         }
-        throw new IllegalStateException("Unknown product type in file: " + type);
+        throw new IllegalStateException("Tipo de producto desconocido en el archivo: " + type);
     }
 
+    /**
+     * Extrae el valor de un segmento con formato "clave: valor".
+     *
+     * @param part el segmento de texto a interpretar
+     * @return el valor extraído, sin espacios al inicio o al final
+     */
     private String value(String part) {
         return part.split(":", 2)[1].trim();
     }
