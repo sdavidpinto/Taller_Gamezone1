@@ -125,13 +125,13 @@ Prohibidas:
 Justifique su decisión considerando la reutilización de código y la coherencia
 del modelo.
 
-Para simplificacion de el codigo la marca puede ser tomada como atributo para ser comparado con las consolas eso significa usar un atributo general de mas para ahorrar en la especializacion de las clases de tipo Accessory
+Para simplificacion de el codigo la marca puede ser tomada como atributo para ser comparado con las consolas eso significa usar un atributo general de mas para ahorrar en la especializacion de las clases de tipo Accessory y facilitar el proceso de busqueda en capaz mas altas
 
 2. ¿Qué atributos son comunes a los tres tipos de accesorios y cuáles son
 específicos de cada tipo? ¿Cómo se refleja esta distinción en la jerarquía de
 clases del módulo?
 
-Tienen atributos similares a productos con la diferenciacion de usar la marca, 
+Tienen atributos similares a productos con la diferenciacion de usar la marca (atributo brand) para determinar la compatibilidad de las consolas registradas, 
 
 
 3. La compatibilidad entre un accesorio y una consola es una relación entre dos
@@ -153,4 +153,8 @@ cambiar su constructor y agregar un parametro para enviar un Arraylist de tipo A
 del módulo de accesorios? Justifique su decisión con base en las
 responsabilidades de cada capa.
 
-Module: Clase abstracta Accesory y sus especializaciones cable,Controller 
+Module: Clase abstracta Accesory y sus especializaciones cable,Controller,Memory, es logico que en esta capa esten los modelos y estructura de las clases de las cuales repository buscara para añadir y eliminar de los archivos
+
+Persistence: En esta capa Se crean la clase AccesoryRepositorios Y AccessoryRepositoryFile Para mantener la persistencia en un nuevo archivo de tipo TXT depende de la clase Accesory Y clases hijas para encontrar una estructura Y poder leer Construir y reconstruir los archivos de manera eficiente
+
+Service: En esta capa se crea AccesoryService Para el tratamiento Del CRUD Y de las validaciones y excepciones de La creación de cada 1 de los tipos de accesorios Anteriormente mencionados
