@@ -6,12 +6,12 @@ classDiagram
     class Person {
         <<abstract>>
     }
-    class Customer {
+    class Client {
     }
     class Seller {
     }
 
-    Person <|-- Customer
+    Person <|-- Client
     Person <|-- Seller
 
     %% Product Hierarchy
@@ -25,4 +25,19 @@ classDiagram
 
     Product <|-- VideoGame
     Product <|-- Console
+
+    %% Accessory Hierarchy
+    class Accessory {
+        <<abstract>>
+    }
+    class Cable {
+    }
+    class Controller {
+    }
+    class Memory {
+    }
+
+    Accessory <|-- Cable
+    Accessory <|-- Controller
+    Accessory <|-- Memory
 ```

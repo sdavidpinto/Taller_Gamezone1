@@ -8,60 +8,75 @@ classDiagram
     }
 
     namespace ui_layer {
-        class MainConsoleMenu {
+        class MenuUI {
             <<UI>>
             + start() void
-            + displayMainMenu() void
-        }
-        class ProductsSubMenu {
-            + display() void
-        }
-        class PersonsSubMenu {
-            + display() void
-        }
-        class SalesSubMenu {
-            + display() void
         }
     }
 
     namespace service_layer {
         class SaleService {
             <<Líder Técnico>>
-            + registerSale(Sale sale) void
-            + getSalesHistory() List~Sale~
-            + getCustomerHistory(Customer customer) List~Sale~
-            + getSellerSales(Seller seller) List~Sale~
+            + registerSale(String code, String clientIdNumber, String sellerIdNumber, List~String~ productIdentifiers, List~String~ accessoryIdentifiers) Sale
+            + findByCode(String code) Sale
+            + findAll() List~Sale~
+            + cancelSale(String code) boolean
         }
         class ProductService {
             <<Desarrollador 1>>
-            + registerVideoGame(VideoGame videoGame) void
-            + registerConsole(Console console) void
-            + listProducts() List~Product~
-            + updateStock(Product product, int quantity) void
+            + registerVideoGame(...) void
+            + registerConsole(...) void
+            + findByIdentifier(String identifier) Product
+            + findAll() List~Product~
+            + updateStock(String identifier, int newStock) boolean
         }
-        class PersonService {
+        class ClientService {
             <<Desarrollador 2>>
-            + registerCustomer(Customer customer) void
-            + listCustomers() List~Customer~
-            + listSellers() List~Seller~
+            + registerClient(String name, String idNumber, String phone, String email) void
+            + findByIdNumber(String idNumber) Client
+            + findAll() List~Client~
+            + updateClient(...) boolean
+        }
+        class SellerService {
+            <<Desarrollador 2>>
+            + registerSeller(String name, String idNumber, String phone, String employeeCode, String shift) void
+            + findByIdNumber(String idNumber) Seller
+            + findAll() List~Seller~
+        }
+        class AccessoryService {
+            <<Desarrollador 1>>
+            + registerAccessory(Accessory accessory) void
+            + findByIdentifier(String identifier) Accessory
+            + findAll() List~Accessory~
+            + findByType(String type) List~Accessory~
         }
     }
 
     namespace persistence_layer {
         class SaleRepository {
             <<Líder Técnico>>
-            + save(List~Sale~ sales) void
-            + load() List~Sale~
+            + save(Sale sale) void
+            + findAll() List~Sale~
         }
         class ProductRepository {
             <<Desarrollador 1>>
-            + save(List~Product~ products) void
-            + load() List~Product~
+            + save(Product product) void
+            + findAll() List~Product~
         }
-        class PersonRepository {
+        class ClientRepository {
             <<Desarrollador 2>>
-            + save(List~Person~ persons) void
-            + load() List~Person~
+            + save(Client client) void
+            + findAll() List~Client~
+        }
+        class SellerRepository {
+            <<Desarrollador 2>>
+            + save(Seller seller) void
+            + findAll() List~Seller~
+        }
+        class AccessoryRepository {
+            <<Desarrollador 1>>
+            + save(Accessory accessory) void
+            + findAll() List~Accessory~
         }
     }
 
@@ -69,24 +84,24 @@ classDiagram
         class Person {
             <<Abstract>>
             - String name
-            - String identification
-            - String contactPhone
+            - String idNumber
+            - String phone
             + getName() String
-            + getIdentification() String
-            + getContactPhone() String
+            + getIdNumber() String
+            + getPhone() String
         }
-        class Customer {
+        class Client {
             - String email
-            - List~Sale~ purchaseHistory
+            - List~Sale~ salesHistory
             + getEmail() String
-            + getPurchaseHistory() List~Sale~
+            + getSalesHistory() List~Sale~
         }
         class Seller {
             <<pre-loaded>>
             - String employeeCode
-            - String workShift
+            - String shift
             + getEmployeeCode() String
-            + getWorkShift() String
+            + getShift() String
         }
         class Product {
             <<Abstract>>
@@ -113,53 +128,92 @@ classDiagram
             - String generation
             + getDescription() String
         }
+        class Accessory {
+            <<Abstract>>
+            - String identifier
+            - String title
+            - double price
+            - int availableQuantity
+            - String brand
+            + getIdentifier() String
+            + getTitle() String
+            + getPrice() double
+            + getAvailableQuantity() int
+            + getBrand() String
+            + getDescription()* String
+        }
+        class Cable {
+            - String connectionType
+            - int length
+            + getDescription() String
+        }
+        class Controller {
+            - boolean alambric
+            + getDescription() String
+        }
+        class Memory {
+            - String memoryType
+            - int storage
+            + getDescription() String
+        }
         class Sale {
-            - Date date
-            - Customer customer
+            - LocalDate date
+            - Client client
             - Seller seller
             - List~Product~ products
             - double total
-            + calculateTotal() double
-            + getDate() Date
+            + calculateTotal(List~Product~ products) double
+            + getDate() LocalDate
             + getProducts() List~Product~
         }
     }
 
     %% Dependencias de entrada y UI
-    Main --> MainConsoleMenu
-    MainConsoleMenu --> ProductsSubMenu
-    MainConsoleMenu --> PersonsSubMenu
-    MainConsoleMenu --> SalesSubMenu
+    Main --> MenuUI
 
     %% Dependencias UI -> Service
-    MainConsoleMenu --> SaleService
-    ProductsSubMenu --> ProductService
-    PersonsSubMenu --> PersonService
-    SalesSubMenu --> SaleService
+    MenuUI --> SaleService
+    MenuUI --> ProductService
+    MenuUI --> ClientService
+    MenuUI --> SellerService
+    MenuUI --> AccessoryService
 
     %% Dependencias Service -> Persistence
     SaleService --> SaleRepository
+    SaleService --> ClientRepository
+    SaleService --> SellerRepository
+    SaleService --> ProductRepository
+    SaleService --> AccessoryRepository
     ProductService --> ProductRepository
-    PersonService --> PersonRepository
+    ClientService --> ClientRepository
+    SellerService --> SellerRepository
+    AccessoryService --> AccessoryRepository
 
     %% Dependencias de Service hacia Model (relaciones de uso)
     SaleService --> Sale
     ProductService --> Product
-    PersonService --> Person
+    ClientService --> Client
+    SellerService --> Seller
+    AccessoryService --> Accessory
 
     %% Dependencias de Persistence hacia Model
     SaleRepository --> Sale
     ProductRepository --> Product
-    PersonRepository --> Person
+    ClientRepository --> Client
+    SellerRepository --> Seller
+    AccessoryRepository --> Accessory
 
     %% Relaciones de Herencia (Triángulos)
-    Person <|-- Customer
+    Person <|-- Client
     Person <|-- Seller
     Product <|-- VideoGame
     Product <|-- Console
+    Accessory <|-- Cable
+    Accessory <|-- Controller
+    Accessory <|-- Memory
 
     %% Relaciones de Asociación de la Venta
-    Sale --> Customer
+    Sale --> Client
     Sale --> Seller
     Sale --> Product
 ```
