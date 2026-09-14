@@ -1,9 +1,17 @@
 package ui;
 
+import java.util.ArrayList;
 import model.Client;
 import model.Product;
 import model.Sale;
 import model.Seller;
+import model.Accessory;
+import model.Cable;
+import model.Console;
+import model.Controller;
+import model.Memory;
+
+import services.AccessoryService;
 import services.ClientService;
 import service.ProductService;
 import services.SaleService;
@@ -30,13 +38,15 @@ public class MenuUI {
     private final SellerService sellerService;
     private final ProductService productService;
     private final SaleService saleService;
+    private final AccessoryService accessoryService;
 
     public MenuUI(ClientService clientService, SellerService sellerService,
-                   ProductService productService, SaleService saleService) {
+                   ProductService productService, SaleService saleService, AccessoryService accessoryService) {
         this.clientService = clientService;
         this.sellerService = sellerService;
         this.productService = productService;
         this.saleService = saleService;
+        this.accessoryService = accessoryService;
     }
 
     /**
@@ -51,6 +61,7 @@ public class MenuUI {
                     + "2. Vendedores\n"
                     + "3. Productos\n"
                     + "4. Ventas\n"
+                    + "5. Accesorios\n"
                     + "0. Salir";
             String entrada = JOptionPane.showInputDialog(null, menuPrincipal, "Menú principal", JOptionPane.PLAIN_MESSAGE);
 
@@ -65,6 +76,7 @@ public class MenuUI {
                 case 2 -> sellersMenu();
                 case 3 -> productsMenu();
                 case 4 -> salesMenu();
+                case 5 -> accessoriesMenu();
                 case 0 -> JOptionPane.showMessageDialog(null, "Hasta luego.");
                 default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
             }
@@ -103,6 +115,14 @@ public class MenuUI {
         }
     }
 
+     /**
+     * Pide la confirmacion para el tipo de control usado en los accessorios.
+     */
+    private Boolean askYesNo(String mensaje) {
+        int opcion = JOptionPane.showConfirmDialog(null, mensaje, "Confirmación", JOptionPane.YES_NO_OPTION);
+        if (opcion == JOptionPane.CLOSED_OPTION) return null;
+        return opcion == JOptionPane.YES_OPTION;
+    }
     /**
      * Pide un texto obligatorio repitiendo la pregunta mientras venga vacío
      * o en blanco. Si el usuario cancela el diálogo, se interrumpe todo el
@@ -505,8 +525,16 @@ public class MenuUI {
             String productosTexto = askRequiredText("Identificadores de productos separados por coma (ej: P001,P002):");
             if (productosTexto == null) return;
             List<String> productIds = Arrays.asList(productosTexto.split("\\s*,\\s*"));
+            
+            String accesoriosTexto = JOptionPane.showInputDialog("Identificadores de accesorios separados por coma (opcional, deja vacío si no aplica):");
+            if (accesoriosTexto == null) return; // el usuario canceló
+            List<String> accessoryIds = accesoriosTexto.isBlank()
+                    ? new ArrayList<>()
+                    : Arrays.asList(accesoriosTexto.split("\\s*,\\s*"));
+
+            
             try {
-                venta = saleService.registerSale(code, clientId, sellerId, productIds);
+                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds);
                 registrado = true;
             } catch (IllegalArgumentException | IllegalStateException e) {
                 JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores de producto e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
@@ -539,5 +567,170 @@ public class MenuUI {
         String code = JOptionPane.showInputDialog("Código de la venta a cancelar:");
         boolean ok = saleService.cancelSale(code);
         JOptionPane.showMessageDialog(null, ok ? "Venta cancelada, stock devuelto." : "No se encontró la venta.");
+    }
+    
+    
+    // ================= ACCESORIOS =================
+
+    private void accessoriesMenu() {
+        String menu = "=== Accesorios ===\n"
+                + "1. Registrar Control\n"
+                + "2. Registrar Cable\n"
+                + "3. Registrar Memoria\n"
+                + "4. Listar todos\n"
+                + "5. Listar por tipo\n"
+                + "6. Consultar compatibles con una consola\n"
+                + "0. Volver";
+        String entrada = JOptionPane.showInputDialog(null, menu, "Accesorios", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) return;
+
+        switch (parseOption(entrada)) {
+            case 1 -> registerController();
+            case 2 -> registerCable();
+            case 3 -> registerMemory();
+            case 4 -> listAllAccessories();
+            case 5 -> listAccessoriesByType();
+            case 6 -> consultCompatibleAccessories();
+            case 0 -> { /* volver */ }
+            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        }
+    }
+
+    private void registerController() {
+        String title = askRequiredText("Título:");
+        if (title == null) return;
+        Double price = askDouble("Precio:");
+        if (price == null) return;
+        Integer stock = askInt("Stock:");
+        if (stock == null) return;
+        String brand = askRequiredText("Marca:");
+        if (brand == null) return;
+        Boolean alambric = askYesNo("¿Es alámbrico?");
+        if (alambric == null) return;
+
+        boolean registrado = false;
+        do {
+            String identifier = askRequiredText("Identificador:");
+            if (identifier == null) return;
+            try {
+                accessoryService.registerAccessory(new Controller(identifier, title, price, stock, brand, alambric));
+                registrado = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrado);
+
+        JOptionPane.showMessageDialog(null, "Control registrado con éxito.");
+    }
+
+    private void registerCable() {
+        String title = askRequiredText("Título:");
+        if (title == null) return;
+        Double price = askDouble("Precio:");
+        if (price == null) return;
+        Integer stock = askInt("Stock:");
+        if (stock == null) return;
+        String brand = askRequiredText("Marca:");
+        if (brand == null) return;
+        String connectionType = askRequiredText("Tipo de conexión:");
+        if (connectionType == null) return;
+        Integer length = askInt("Longitud (cm):");
+        if (length == null) return;
+
+        boolean registrado = false;
+        do {
+            String identifier = askRequiredText("Identificador:");
+            if (identifier == null) return;
+            try {
+                accessoryService.registerAccessory(new Cable(identifier, title, price, stock, brand, connectionType, length));
+                registrado = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrado);
+
+        JOptionPane.showMessageDialog(null, "Cable registrado con éxito.");
+    }
+
+    private void registerMemory() {
+        String title = askRequiredText("Título:");
+        if (title == null) return;
+        Double price = askDouble("Precio:");
+        if (price == null) return;
+        Integer stock = askInt("Stock:");
+        if (stock == null) return;
+        String brand = askRequiredText("Marca:");
+        if (brand == null) return;
+        String memoryType = askRequiredText("Tipo de memoria:");
+        if (memoryType == null) return;
+        Integer storage = askInt("Capacidad (GB):");
+        if (storage == null) return;
+
+        boolean registrado = false;
+        do {
+            String identifier = askRequiredText("Identificador:");
+            if (identifier == null) return;
+            try {
+                accessoryService.registerAccessory(new Memory(identifier, title, price, stock, brand, memoryType, storage));
+                registrado = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrado);
+
+        JOptionPane.showMessageDialog(null, "Memoria registrada con éxito.");
+    }
+
+    private void listAllAccessories() {
+        List<Accessory> accesorios = accessoryService.findAll();
+        JTextArea salida = new JTextArea(20, 60);
+        JScrollPane tabla = new JScrollPane(salida);
+        salida.setText("identifier\tdescription\n");
+        for (Accessory a : accesorios) {
+            salida.append(a.getIdentifier() + "\t" + a.getDescription() + "\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
+    }
+
+    private void listAccessoriesByType() {
+        String type = askRequiredText("Tipo (Controller / Cable / Memory):");
+        if (type == null) return;
+
+        List<Accessory> accesorios = accessoryService.findByType(type);
+        if (accesorios.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay accesorios de tipo: " + type);
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 60);
+        JScrollPane tabla = new JScrollPane(salida);
+        salida.setText("identifier\tdescription\n");
+        for (Accessory a : accesorios) {
+            salida.append(a.getIdentifier() + "\t" + a.getDescription() + "\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
+    }
+
+    private void consultCompatibleAccessories() {
+        String consoleIdentifier = askRequiredText("Identifier de la consola:");
+        if (consoleIdentifier == null) return;
+
+        Product producto = productService.findByIdentifier(consoleIdentifier);
+        if (!(producto instanceof Console consola)) {
+            JOptionPane.showMessageDialog(null, "No existe una consola con ese identifier.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        List<Accessory> compatibles = accessoryService.findCompatibleWithConsoleBrand(consola.getBrand());
+        if (compatibles.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay accesorios compatibles con la marca: " + consola.getBrand());
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 60);
+        JScrollPane tabla = new JScrollPane(salida);
+        salida.setText("identifier\tdescription\n");
+        for (Accessory a : compatibles) {
+            salida.append(a.getIdentifier() + "\t" + a.getDescription() + "\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
     }
 }

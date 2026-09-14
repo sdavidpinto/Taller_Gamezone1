@@ -119,3 +119,42 @@ Prohibidas:
 - `Services` → `Model`: necesitan los objetos del dominio para operar sobre ellos.
 - `Services` → `Persistence`: son los únicos que deciden cuándo guardar o leer datos.
 - `Persistence` → `Model`: necesita saber qué datos guardar y reconstruir.
+
+1. ¿Los accesorios deben integrarse a la jerarquía existente de productos
+(extendiendo Product) o deben conformar una jerarquía independiente?
+Justifique su decisión considerando la reutilización de código y la coherencia
+del modelo.
+
+Para simplificacion de el codigo la marca puede ser tomada como atributo para ser comparado con las consolas eso significa usar un atributo general de mas para ahorrar en la especializacion de las clases de tipo Accessory y facilitar el proceso de busqueda en capaz mas altas
+
+2. ¿Qué atributos son comunes a los tres tipos de accesorios y cuáles son
+específicos de cada tipo? ¿Cómo se refleja esta distinción en la jerarquía de
+clases del módulo?
+
+Tienen atributos similares a productos con la diferenciacion de usar la marca (atributo brand) para determinar la compatibilidad de las consolas registradas, 
+
+
+3. La compatibilidad entre un accesorio y una consola es una relación entre dos
+entidades del sistema. ¿Cómo se representa esta relación en el diseño y en la
+persistencia? ¿La compatibilidad es un atributo del accesorio, de la consola, o
+de ambos?
+
+En el sistema compararemos los valores brand para determinar si la compatibilidad es correcta similar a la vida real como son accesorios como cargadores lenovo,iphone,huawei,entre otros.
+
+4. ¿Qué modificaciones son necesarias en la clase de servicio de ventas
+(SaleService) para que las ventas puedan incluir accesorios sin romper el
+comportamiento existente con videojuegos y consolas?
+
+agregarlas como clases idenpendientes como si fuera un modulo de una persona diferente,es decir agregar un nueva interfaz repository y su implementacion repositoryfile en sale service como explicare debemos cambiar algunos constructores para mantener la inyeccion de dependencias 
+
+cambiar su constructor y agregar un parametro para enviar un Arraylist de tipo Accesory y validar los tipos de brand disponibles mediante foreach de las consolas pedidas o tirar una excepcion si no hay consolas;
+
+5. ¿En qué capa de la arquitectura del sistema deben ubicarse las nuevas clases
+del módulo de accesorios? Justifique su decisión con base en las
+responsabilidades de cada capa.
+
+Module: Clase abstracta Accesory y sus especializaciones cable,Controller,Memory, es logico que en esta capa esten los modelos y estructura de las clases de las cuales repository buscara para añadir y eliminar de los archivos
+
+Persistence: En esta capa Se crean la clase AccesoryRepositorios Y AccessoryRepositoryFile Para mantener la persistencia en un nuevo archivo de tipo TXT depende de la clase Accesory Y clases hijas para encontrar una estructura Y poder leer Construir y reconstruir los archivos de manera eficiente
+
+Service: En esta capa se crea AccesoryService Para el tratamiento Del CRUD Y de las validaciones y excepciones de La creación de cada 1 de los tipos de accesorios Anteriormente mencionados
