@@ -79,7 +79,7 @@ public class Main {
         SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository,accessoryRepository);
 
         // --- Capa ui: recibe los services por constructor ---
-        MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService);
+        MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService, accesoryService);
         menu.start();
     }
 }
