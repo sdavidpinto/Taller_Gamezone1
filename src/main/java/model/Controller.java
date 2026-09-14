@@ -25,8 +25,8 @@ public class Controller extends Accessory {
 
     @Override
     public String getDescription() {
-        return String.format("%s [Controller] %s | Price: $%.2f | Stock: %s | Brand %s ! Alambric %d",
-                getTitle(), getPrice(), getAvailableQuantity(), getBrand(), isAlambric());
+        return String.format("%s [Controller] | Price: $%.2f | Stock: %s | Brand %s | Alambric: %s",
+        getTitle(), getPrice(), getAvailableQuantity(), getBrand(), isAlambric());
     }
 
     public boolean isAlambric() {

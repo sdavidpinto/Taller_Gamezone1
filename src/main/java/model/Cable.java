@@ -31,8 +31,8 @@ public class Cable extends Accessory {
     
     @Override
     public String getDescription() {
-        return String.format("%s [Cable] %s | Price: $%.2f | Stock: %s | Brand %s ! Connectiontype %s | Length %d",
-                getTitle(), getPrice(), getAvailableQuantity(), getBrand(), getConnectionType(),getLength());
+        return String.format("%s [Cable] | Price: $%.2f | Stock: %s | Brand %s | ConnectionType %s | Length %d",
+        getTitle(), getPrice(), getAvailableQuantity(), getBrand(), getConnectionType(), getLength());
     }
 
     public int getLength() {

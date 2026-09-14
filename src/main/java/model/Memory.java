@@ -31,8 +31,8 @@ public class Memory extends Accessory {
     
     @Override
     public String getDescription() {
-        return String.format("%s [Memory] %s | Price: $%.2f | Stock: %s | Brand %s ! MemoryType %s | Storage %d",
-                getTitle(), getPrice(), getAvailableQuantity(), getBrand(), getMemoryType(),getStorage());
+        return String.format("%s [Memory] | Price: $%.2f | Stock: %s | Brand %s | MemoryType %s | Storage %d",
+        getTitle(), getPrice(), getAvailableQuantity(), getBrand(), getMemoryType(), getStorage());
     }
 
     public String getMemoryType() {
