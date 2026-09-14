@@ -9,6 +9,7 @@ import persistence.ClientRepository;
 import persistence.ProductRepository;
 import persistence.SaleRepository;
 import persistence.SellerRepository;
+import persistence.AccessoryRepository;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,13 +29,15 @@ public class SaleService {
     private final ClientRepository clientRepository;
     private final SellerRepository sellerRepository;
     private final ProductRepository productRepository;
-
+    private final AccessoryRepository accessoryRepository;
+    
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
-                        SellerRepository sellerRepository, ProductRepository productRepository) {
+                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository) {
         this.saleRepository = saleRepository;
         this.clientRepository = clientRepository;
         this.sellerRepository = sellerRepository;
         this.productRepository = productRepository;
+        this.accessoryRepository=accessoryRepository;
     }
 
     /**
@@ -42,7 +45,7 @@ public class SaleService {
      * ya armados). Valida existencia de cliente/vendedor/productos y
      * disponibilidad de stock, y descuenta el stock vendido.
      */
-    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers) {
+    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers ) {
         Client client = clientRepository.findByIdNumber(clientIdNumber);
         if (client == null) {
             throw new IllegalArgumentException("Cliente no encontrado: " + clientIdNumber);
