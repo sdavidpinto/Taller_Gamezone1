@@ -6,8 +6,9 @@ import persistence.AccessoryRepository;
 import java.util.List;
 
 /**
- * Service layer for Accessory. Receives the AccessoryRepository interface
- * through constructor injection, never creates its own concrete implementation.
+ * Capa de servicios para Accessory. Recibe la interfaz AccessoryRepository
+ * por inyección de dependencias (constructor), nunca crea su propia
+ * implementación concreta.
  */
 public class AccessoryService {
 
@@ -18,73 +19,73 @@ public class AccessoryService {
     }
 
     /**
-     * Validates that a required field is not null or blank.
+     * Valida que un campo obligatorio no sea nulo ni esté en blanco.
      *
-     * @param value the value to validate
-     * @param fieldName the name of the field, used in the error message
-     * @throws IllegalArgumentException if the value is null or blank
+     * @param value el valor a validar
+     * @param fieldName el nombre del campo, usado en el mensaje de error
+     * @throws IllegalArgumentException si el valor es nulo o está en blanco
      */
     private void requireNonBlank(String value, String fieldName) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("The field " + fieldName + " is required.");
+            throw new IllegalArgumentException("El campo " + fieldName + " es obligatorio.");
         }
     }
 
     /**
-     * Registers a new accessory after validating that it does not already
-     * exist and that its stock quantity is not negative.
+     * Registra un nuevo accesorio después de validar que no exista ya
+     * y que su cantidad en inventario no sea negativa.
      *
-     * @param accessory the accessory to register
-     * @throws IllegalArgumentException if the accessory is null, has an
-     *         invalid identifier, a negative stock quantity, or already
-     *         exists in the repository
+     * @param accessory el accesorio a registrar
+     * @throws IllegalArgumentException si el accesorio es nulo, tiene un
+     *         identificador inválido, una cantidad negativa, o ya existe
+     *         en el repositorio
      */
     public void registerAccessory(Accessory accessory) {
         if (accessory == null) {
-            throw new IllegalArgumentException("The accessory cannot be null.");
+            throw new IllegalArgumentException("El accesorio no puede ser nulo.");
         }
         requireNonBlank(accessory.getIdentifier(), "identifier");
         requireNonBlank(accessory.getTitle(), "title");
         if (accessory.getAvailableQuantity() < 0) {
-            throw new IllegalArgumentException("The available quantity cannot be negative.");
+            throw new IllegalArgumentException("La cantidad disponible no puede ser negativa.");
         }
         if (accessoryRepository.findByIdentifier(accessory.getIdentifier()) != null) {
-            throw new IllegalArgumentException("An accessory already exists with identifier: " + accessory.getIdentifier());
+            throw new IllegalArgumentException("Ya existe un accesorio con identifier: " + accessory.getIdentifier());
         }
         accessoryRepository.save(accessory);
     }
 
     /**
-     * Finds an accessory by its unique identifier.
+     * Busca un accesorio por su identificador único.
      *
-     * @param identifier the identifier to search for
-     * @return the accessory with the given identifier, or null if not found
+     * @param identifier el identificador a buscar
+     * @return el accesorio con ese identificador, o null si no se encuentra
      */
     public Accessory findByIdentifier(String identifier) {
         return accessoryRepository.findByIdentifier(identifier);
     }
 
     /**
-     * Returns all registered accessories.
+     * Retorna todos los accesorios registrados.
      *
-     * @return a list containing all accessories
+     * @return una lista con todos los accesorios
      */
     public List<Accessory> findAll() {
         return accessoryRepository.findAll();
     }
 
     /**
-     * Updates the available stock quantity of an existing accessory.
-     * This is the operation used when a sale reduces inventory.
+     * Actualiza la cantidad disponible en inventario de un accesorio existente.
+     * Esta es la operación que se usa cuando una venta reduce el inventario.
      *
-     * @param identifier the identifier of the accessory to update
-     * @param newQuantity the new available quantity
-     * @return true if the accessory was found and updated, false otherwise
-     * @throws IllegalArgumentException if the new quantity is negative
+     * @param identifier el identificador del accesorio a actualizar
+     * @param newQuantity la nueva cantidad disponible
+     * @return true si el accesorio se encontró y actualizó, false en caso contrario
+     * @throws IllegalArgumentException si la nueva cantidad es negativa
      */
     public boolean updateStock(String identifier, int newQuantity) {
         if (newQuantity < 0) {
-            throw new IllegalArgumentException("The available quantity cannot be negative.");
+            throw new IllegalArgumentException("La cantidad disponible no puede ser negativa.");
         }
         Accessory existingAccessory = accessoryRepository.findByIdentifier(identifier);
         if (existingAccessory == null) {
@@ -95,12 +96,13 @@ public class AccessoryService {
     }
 
     /**
-     * Checks whether there is enough available stock to sell the given quantity.
+     * Verifica si hay suficiente inventario disponible para vender la
+     * cantidad solicitada.
      *
-     * @param identifier the identifier of the accessory to check
-     * @param requestedQuantity the quantity requested for a sale
-     * @return true if there is enough stock, false otherwise (including if
-     *         the accessory does not exist)
+     * @param identifier el identificador del accesorio a verificar
+     * @param requestedQuantity la cantidad solicitada para una venta
+     * @return true si hay suficiente inventario, false en caso contrario
+     *         (incluyendo si el accesorio no existe)
      */
     public boolean hasEnoughStock(String identifier, int requestedQuantity) {
         Accessory accessory = accessoryRepository.findByIdentifier(identifier);
@@ -108,10 +110,10 @@ public class AccessoryService {
     }
 
     /**
-     * Deletes an accessory by its unique identifier.
+     * Elimina un accesorio por su identificador único.
      *
-     * @param identifier the identifier of the accessory to delete
-     * @return true if the accessory was found and deleted, false otherwise
+     * @param identifier el identificador del accesorio a eliminar
+     * @return true si el accesorio se encontró y eliminó, false en caso contrario
      */
     public boolean deleteAccessory(String identifier) {
         return accessoryRepository.deleteByIdentifier(identifier);
