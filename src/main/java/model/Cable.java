@@ -20,19 +20,17 @@ public class Cable extends Accessory {
      */
     
     
-
-    public Cable(String identifier, String title, double price, int availableQuantity, String brand, String ConnectionType, int Length) {
+ 
+    public Cable(String identifier, String title, double price, int availableQuantity, String brand,String ConnectionType, int Length) {
         super(identifier, title, price, availableQuantity, brand);
         this.ConnectionType = ConnectionType;
         this.Length = Length;
     }
 
-    
-    
     @Override
     public String getDescription() {
         return String.format("%s [Cable] | Price: $%.2f | Stock: %s | Brand %s | ConnectionType %s | Length %d",
-        getTitle(), getPrice(), getAvailableQuantity(), getBrand(), getConnectionType(), getLength());
+                getTitle(), getPrice(), getAvailableQuantity(), getBrand(), getConnectionType(), getLength());
     }
 
     public int getLength() {

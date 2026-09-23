@@ -1,5 +1,7 @@
 package model;
 
+import java.util.List;
+
 /**
  * Representa un producto genérico en el sistema de inventario de GameZone.
  * Esta clase base abstracta define los atributos y métodos comunes para 
@@ -9,6 +11,7 @@ public abstract class Accessory extends Product{
 
     
     private String brand;
+    private List<Product> CompatibleProducts;
     /**
      * Construye una nueva instancia de Producto con los detalles especificados.
      * 
