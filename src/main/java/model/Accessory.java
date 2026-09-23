@@ -5,12 +5,9 @@ package model;
  * Esta clase base abstracta define los atributos y métodos comunes para 
  * todos los tipos de productos del sistema.
  */
-public abstract class Accessory {
+public abstract class Accessory extends Product{
 
-    private String identifier;
-    private String title;
-    private double price;
-    private int availableQuantity;
+    
     private String brand;
     /**
      * Construye una nueva instancia de Producto con los detalles especificados.
@@ -20,51 +17,12 @@ public abstract class Accessory {
      * @param price El precio unitario del producto.
      * @param availableQuantity La cantidad disponible en inventario.
      */
-    public Accessory(String identifier, String title, double price, int availableQuantity, String brand) { this.identifier = identifier;    
-        this.title = title;
-        this.price = price;
-        this.availableQuantity = availableQuantity;
+    public Accessory(String identifier, String title, double price, int availableQuantity,String brand) {
+        super(identifier, title, price, availableQuantity);
         this.brand = brand;
-}
-
-    /**
-     * Obtiene el identificador único del producto.
-     * 
-     * @return El identificador del producto.
-     */
-    public String getIdentifier() {
-        return identifier;
     }
 
-    /**
-     * Obtiene el título o nombre del producto.
-     * 
-     * @return El título del producto.
-     */
-    public String getTitle() { return title; }
-
-    /**
-     * Obtiene el precio del Accesorio.
-     * 
-     * @return El precio del Accesorio.
-     */
-    public double getPrice() { return price; }
-
-    /**
-     * Obtiene la cantidad disponible en inventario.
-     * 
-     * @return La cantidad disponible.
-     */
-    public int getAvailableQuantity() { return availableQuantity; }
-
-    /**
-     * Establece la cantidad disponible en inventario.
-     * 
-     * @param availableQuantity La nueva cantidad a asignar.
-     */
-    public void setAvailableQuantity(int availableQuantity) {
-        this.availableQuantity = availableQuantity;
-    }
+ 
 
     /**
      * Genera una descripción formateada del producto.
