@@ -573,28 +573,32 @@ public class MenuUI {
     // ================= ACCESORIOS =================
 
     private void accessoriesMenu() {
-        String menu = "=== Accesorios ===\n"
-                + "1. Registrar Control\n"
-                + "2. Registrar Cable\n"
-                + "3. Registrar Memoria\n"
-                + "4. Listar todos\n"
-                + "5. Listar por tipo\n"
-                + "6. Consultar compatibles con una consola\n"
-                + "0. Volver";
-        String entrada = JOptionPane.showInputDialog(null, menu, "Accesorios", JOptionPane.PLAIN_MESSAGE);
-        if (entrada == null) return;
+    String menu = "=== Accesorios ===\n"
+            + "1. Registrar Control\n"
+            + "2. Registrar Cable\n"
+            + "3. Registrar Memoria\n"
+            + "4. Listar todos\n"
+            + "5. Listar por tipo\n"
+            + "6. Consultar compatibles con una consola (por marca)\n"
+            + "7. Agregar producto compatible a un accesorio\n"
+            + "8. Listar accesorios compatibles con un producto (específico)\n"
+            + "0. Volver";
+    String entrada = JOptionPane.showInputDialog(null, menu, "Accesorios", JOptionPane.PLAIN_MESSAGE);
+    if (entrada == null) return;
 
-        switch (parseOption(entrada)) {
-            case 1 -> registerController();
-            case 2 -> registerCable();
-            case 3 -> registerMemory();
-            case 4 -> listAllAccessories();
-            case 5 -> listAccessoriesByType();
-            case 6 -> consultCompatibleAccessories();
-            case 0 -> { /* volver */ }
-            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
-        }
+    switch (parseOption(entrada)) {
+        case 1 -> registerController();
+        case 2 -> registerCable();
+        case 3 -> registerMemory();
+        case 4 -> listAllAccessories();
+        case 5 -> listAccessoriesByType();
+        case 6 -> consultCompatibleAccessories();
+        case 7 -> addCompatibleProduct();
+        case 8 -> listCompatibleAccessories();
+        case 0 -> { /* volver */ }
+        default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
     }
+}
 
     private void registerController() {
         String title = askRequiredText("Título:");
@@ -733,4 +737,53 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
+    private void addCompatibleProduct() {
+        String accessoryId = askRequiredText("Identifier del accesorio:");
+        if (accessoryId == null) return;
+
+        if (accessoryService.findByIdentifier(accessoryId) == null) {
+            JOptionPane.showMessageDialog(null, "No existe un accesorio con ese identifier.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String productId = askRequiredText("Identifier del producto compatible (ej. una consola):");
+        if (productId == null) return;
+
+        Product product = productService.findByIdentifier(productId);
+        if (product == null) {
+            JOptionPane.showMessageDialog(null, "No existe un producto con ese identifier.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            accessoryService.addCompatibleProduct(accessoryId, product);
+            JOptionPane.showMessageDialog(null, "Producto agregado como compatible correctamente.");
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void listCompatibleAccessories() {
+        String productId = askRequiredText("Identifier del producto (ej. una consola):");
+        if (productId == null) return;
+
+        if (productService.findByIdentifier(productId) == null) {
+            JOptionPane.showMessageDialog(null, "No existe un producto con ese identifier.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        List<Accessory> compatibles = accessoryService.findAccessoriesCompatibleWith(productId);
+        if (compatibles.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay accesorios compatibles con ese producto.");
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 60);
+        JScrollPane tabla = new JScrollPane(salida);
+        salida.setText("identifier\tdescription\n");
+        for (Accessory a : compatibles) {
+            salida.append(a.getIdentifier() + "\t" + a.getDescription() + "\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
+    }
+    
 }
