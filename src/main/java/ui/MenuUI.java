@@ -209,7 +209,28 @@ public class MenuUI {
     private void searchClient() {
         String idNumber = JOptionPane.showInputDialog("ID del cliente a buscar:");
         Client c = clientService.findByIdNumber(idNumber);
-        JOptionPane.showMessageDialog(null, c != null ? c.display() : "No se encontró el cliente.");
+
+        if (c == null) {
+            JOptionPane.showMessageDialog(null, "No se encontró el cliente.");
+            return;
+        }
+
+        StringBuilder mensaje = new StringBuilder(c.display());
+
+        List<Sale> ventasDelCliente = saleService.findAll().stream()
+                .filter(venta -> venta.getClient().getIdNumber().equals(idNumber))
+                .toList();
+
+        if (ventasDelCliente.isEmpty()) {
+            mensaje.append("\n\nEste cliente no tiene ventas registradas.");
+        } else {
+            mensaje.append("\n\nVentas del cliente:\n");
+            for (Sale venta : ventasDelCliente) {
+                mensaje.append(venta.Display()).append("\n");
+            }
+        }
+
+        JOptionPane.showMessageDialog(null, mensaje.toString());
     }
 
     private void listClients() {
@@ -302,7 +323,28 @@ public class MenuUI {
     private void searchSeller() {
         String idNumber = JOptionPane.showInputDialog("ID del vendedor a buscar:");
         Seller s = sellerService.findByIdNumber(idNumber);
-        JOptionPane.showMessageDialog(null, s != null ? s.display() : "No se encontró el vendedor.");
+
+        if (s == null) {
+            JOptionPane.showMessageDialog(null, "No se encontró el vendedor.");
+            return;
+        }
+
+        StringBuilder mensaje = new StringBuilder(s.display());
+
+        List<Sale> ventasDelVendedor = saleService.findAll().stream()
+                .filter(venta -> venta.getSeller().getIdNumber().equals(idNumber))
+                .toList();
+
+        if (ventasDelVendedor.isEmpty()) {
+            mensaje.append("\n\nEste vendedor no tiene ventas registradas.");
+        } else {
+            mensaje.append("\n\nVentas del vendedor:\n");
+            for (Sale venta : ventasDelVendedor) {
+                mensaje.append(venta.Display()).append("\n");
+            }
+        }
+
+        JOptionPane.showMessageDialog(null, mensaje.toString());
     }
 
     private void listSellers() {
