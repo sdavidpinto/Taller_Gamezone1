@@ -37,6 +37,14 @@ public abstract class Promotion {
 
     public LocalDate getEndDate() { return endDate; }
 
+    public boolean isActive() {
+        return isActive(LocalDate.now());
+    }
+
+    public boolean isActive(LocalDate date) {
+        return !date.isBefore(startDate) && !date.isAfter(endDate);
+    }
+
     public abstract double calculateDiscount(List<Product> products);
 
     public abstract String getDescription();
