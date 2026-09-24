@@ -1,5 +1,6 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -9,9 +10,8 @@ import java.util.List;
  */
 public abstract class Accessory extends Product{
 
-    
-    private String brand;
-    private List<Product> CompatibleProducts;
+    protected String brand;
+    protected List<Product> compatible;
     /**
      * Construye una nueva instancia de Producto con los detalles especificados.
      * 
@@ -23,10 +23,39 @@ public abstract class Accessory extends Product{
     public Accessory(String identifier, String title, double price, int availableQuantity,String brand) {
         super(identifier, title, price, availableQuantity);
         this.brand = brand;
+        this.compatible=new ArrayList<>();
     }
 
- 
+    public Accessory( String identifier, String title, double price, int availableQuantity,String brand, List<Product> compatible) {
+        super(identifier, title, price, availableQuantity);
+        this.brand = brand;
+        this.compatible = compatible;
+    }
 
+    public List<Product> getCompatible() {
+        return compatible;
+    }
+
+    public void setCompatible(List<Product> compatible) {
+        this.compatible = compatible;
+    }
+
+    @Override
+    public int getAvailableQuantity() {
+        return super.getAvailableQuantity(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+    }
+
+    @Override
+    public void setAvailableQuantity(int availableQuantity) {
+        super.setAvailableQuantity(availableQuantity); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+    }
+
+    
+    
+    /**
+     * Genera agrega los productos compatibles a el accesorio.
+     */
+    public abstract void addProduct(Product p);
     /**
      * Genera una descripción formateada del producto.
      * 
