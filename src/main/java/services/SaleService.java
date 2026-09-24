@@ -5,6 +5,7 @@ import model.Client;
 import model.Product;
 import model.Sale;
 import model.Seller;
+import model.Accessory;
 import persistence.ClientRepository;
 import persistence.ProductRepository;
 import persistence.SaleRepository;
@@ -46,6 +47,10 @@ public class SaleService {
      * disponibilidad de stock, y descuenta el stock vendido.
      */
     public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers ) {
+        if ((productIdentifiers == null || productIdentifiers.isEmpty())
+                && (accessoryIdentifiers == null || accessoryIdentifiers.isEmpty())) {
+            throw new IllegalArgumentException("La venta debe incluir al menos un producto o accesorio");
+        }
         Client client = clientRepository.findByIdNumber(clientIdNumber);
         if (client == null) {
             throw new IllegalArgumentException("Cliente no encontrado: " + clientIdNumber);
@@ -56,21 +61,37 @@ public class SaleService {
             throw new IllegalArgumentException("Vendedor no encontrado: " + sellerIdNumber);
         }
 
-        List<Product> productos = new ArrayList<>();
-        for (String id : productIdentifiers) {
-            Product p = productRepository.findByIdentifier(id);
+        List<Product> products = new ArrayList<>();
+        if (productIdentifiers != null) {
+    for (String id : productIdentifiers) {
+        Product p = productRepository.findByIdentifier(id);
             if (p == null) {
                 throw new IllegalArgumentException("Producto no encontrado: " + id);
             }
             if (p.getAvailableQuantity() <= 0) {
                 throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
             }
-            productos.add(p);
+            products.add(p);
             p.setAvailableQuantity(p.getAvailableQuantity() - 1);
             productRepository.update(p);
         }
+    }
+    if (accessoryIdentifiers != null) {
+        for (String id : accessoryIdentifiers) {
+            Accessory a = accessoryRepository.findByIdentifier(id);
+            if (a == null) {
+                throw new IllegalArgumentException("Producto no encontrado: " + id);
+            }
+            if (a.getAvailableQuantity() <= 0) {
+                throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
+            }
+            products.add(a);
+            a.setAvailableQuantity(a.getAvailableQuantity() - 1);
+            accessoryRepository.update(a);
+        }
+    }
 
-        Sale sale = new Sale(code, new Date(), client, seller, productos);
+        Sale sale = new Sale(code, new Date(), client, seller, products);
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;
@@ -94,12 +115,21 @@ public class SaleService {
             return false;
         }
         for (Product p : sale.getProducts()) {
+        if (p instanceof Accessory) {
+            Accessory actualAccessory = accessoryRepository.findByIdentifier(p.getIdentifier());
+            if (actualAccessory != null) {
+                actualAccessory.setAvailableQuantity(actualAccessory.getAvailableQuantity() + 1);
+                accessoryRepository.update(actualAccessory);
+            }
+        } else {
             Product actual = productRepository.findByIdentifier(p.getIdentifier());
             if (actual != null) {
                 actual.setAvailableQuantity(actual.getAvailableQuantity() + 1);
                 productRepository.update(actual);
             }
         }
+    }
+
         return saleRepository.deleteByCode(code);
     }
 }

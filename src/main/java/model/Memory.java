@@ -1,5 +1,7 @@
 package model;
 
+import java.util.ArrayList;
+
 /**
  * Representa un Accesorio de tipo Control.
  * Extiende la clase Product para incluir atributos específicos de un Control.
@@ -49,6 +51,16 @@ public class Memory extends Accessory {
 
     public void setStorage(int Storage) {
         this.Storage = Storage;
+    }
+
+    @Override
+    public void addProduct(Product p) {
+        if (compatible == null) {
+            compatible = new ArrayList<>();
+        }
+        if (p != null && !compatible.contains(p)) {
+            compatible.add(p);
+        }
     }
 
    

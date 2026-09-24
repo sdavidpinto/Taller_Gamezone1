@@ -8,6 +8,7 @@ import model.Controller;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import model.Product;
 
 /**
  * Implementación de AccessoryRepository basada en archivos.
@@ -16,9 +17,11 @@ import java.util.List;
 public class AccessoryRepositoryFile implements AccessoryRepository {
 
     private final String filePath;
+     private final ProductRepository productRepository;
 
-    public AccessoryRepositoryFile(String filePath) {
+    public AccessoryRepositoryFile(String filePath, ProductRepository productRepository) {
         this.filePath = filePath;
+        this.productRepository = productRepository;
         createFileIfNotExists();
     }
 
@@ -166,6 +169,7 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
      * @throws IllegalArgumentException si el tipo de accesorio no es soportado
      */
     private String toLine(Accessory a) {
+        String compatibleIds = serializeCompatible(a.getCompatible());
         if (a instanceof Cable ca) {
             return "type: Cable"
                     + "; identifier: " + ca.getIdentifier()
@@ -174,7 +178,8 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
                     + "; stock: " + ca.getAvailableQuantity()
                     + "; brand: " + ca.getBrand()
                     + "; connectionType: " + ca.getConnectionType()
-                    + "; length: " + ca.getLength();
+                    + "; length: " + ca.getLength()
+                    + "; compatible: " + compatibleIds;
         } else if (a instanceof Controller co) {
             return "type: Controller"
                     + "; identifier: " + co.getIdentifier()
@@ -182,7 +187,8 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
                     + "; price: " + co.getPrice()
                     + "; stock: " + co.getAvailableQuantity()
                     + "; brand: " + co.getBrand()
-                    + "; wired: " + co.isAlambric();
+                    + "; wired: " + co.isAlambric()
+                    + "; compatible: " + compatibleIds;
         } else if (a instanceof Memory m) {
             return "type: Memory"
                     + "; identifier: " + m.getIdentifier()
@@ -191,11 +197,20 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
                     + "; stock: " + m.getAvailableQuantity()
                     + "; brand: " + m.getBrand()
                     + "; memoryType: " + m.getMemoryType()
-                    + "; storage: " + m.getStorage();
+                    + "; storage: " + m.getStorage()
+                    + "; compatible: " + compatibleIds;
         }
         throw new IllegalArgumentException("Tipo de accesorio no soportado para persistencia: " + a.getClass());
     }
 
+    private String serializeCompatible(List<Product> compatible) {
+        if (compatible == null || compatible.isEmpty()) {
+            return "";
+        }
+        return compatible.stream()
+                .map(Product::getIdentifier)
+                .collect(java.util.stream.Collectors.joining(","));
+    }
     /**
      * Reconstruye un objeto Accessory a partir de una línea de texto,
      * identificando el tipo concreto mediante la etiqueta "type".
@@ -204,7 +219,7 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
      * @return el objeto Accessory reconstruido (Cable, Controller o Memory)
      * @throws IllegalStateException si el tipo indicado en la línea es desconocido
      */
-    private Accessory parseLine(String line) {
+   private Accessory parseLine(String line) {
         String[] parts = line.split(";");
         String type = value(parts[0]);
         String identifier = value(parts[1]);
@@ -213,21 +228,51 @@ public class AccessoryRepositoryFile implements AccessoryRepository {
         int stock = Integer.parseInt(value(parts[4]));
         String brand = value(parts[5]);
 
+        Accessory accessory;
         if (type.equals("Cable")) {
             String connectionType = value(parts[6]);
             int length = Integer.parseInt(value(parts[7]));
-            return new Cable(identifier, title, price, stock, brand, connectionType, length);
+            accessory = new Cable(identifier, title, price, stock, brand, connectionType, length);
+            accessory.setCompatible(resolveCompatible(parts, 8));
         } else if (type.equals("Controller")) {
             boolean wired = Boolean.parseBoolean(value(parts[6]));
-            return new Controller(identifier, title, price, stock, brand, wired);
+            accessory = new Controller(identifier, title, price, stock, brand, wired);
+            accessory.setCompatible(resolveCompatible(parts, 7));
         } else if (type.equals("Memory")) {
             String memoryType = value(parts[6]);
             int storage = Integer.parseInt(value(parts[7]));
-            return new Memory(identifier, title, price, stock, brand, memoryType, storage);
+            accessory = new Memory(identifier, title, price, stock, brand, memoryType, storage);
+            accessory.setCompatible(resolveCompatible(parts, 8));
+        } else {
+            throw new IllegalStateException("Tipo de producto desconocido en el archivo: " + type);
         }
-        throw new IllegalStateException("Tipo de producto desconocido en el archivo: " + type);
+        return accessory;
     }
 
+
+   
+   /**
+ * Reconstruye la lista de productos compatibles a partir de los IDs
+ * guardados, buscándolos en el ProductRepository.
+ * Es tolerante con líneas antiguas que no tienen el campo "compatible".
+ */
+    private List<Product> resolveCompatible(String[] parts, int index) {
+        List<Product> result = new ArrayList<>();
+        if (parts.length <= index) {
+            return result; // línea vieja sin ese campo
+        }
+        String raw = value(parts[index]);
+        if (raw.isBlank()) {
+            return result;
+        }
+        for (String id : raw.split(",")) {
+            Product p = productRepository.findByIdentifier(id.trim());
+            if (p != null) {
+                result.add(p);
+            }
+        }
+        return result;
+    }
     /**
      * Extrae el valor de un segmento con formato "clave: valor".
      *
