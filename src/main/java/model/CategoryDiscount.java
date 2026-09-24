@@ -21,7 +21,7 @@ public class CategoryDiscount extends Promotion {
                     "Categoria no valida: " + targetCategory + ". Permitidas: " + VALID_CATEGORIES);
         }
         if (percentage <= 0 || percentage > 100) {
-            throw new IllegalArgumentException("El porcentaje debe estar entre 0 (excluido) y 100.");
+            throw new IllegalArgumentException("El porcentaje debe estar entre 0 y 100.");
         }
         this.targetCategory = targetCategory.trim().toUpperCase();
         this.percentage = percentage;
