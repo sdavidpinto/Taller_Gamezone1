@@ -88,4 +88,39 @@ public class PromotionRepositoryFile implements PromotionRepository {
         return promotions;
     }
     
+/**
+     * Converts a promotion into a CSV line, including a type discriminator
+     * as the first column so it can be reconstructed correctly on load.
+     */
+    private String toLine(Promotion promotion) {
+        if (promotion instanceof PercentageDiscount p) {
+            return String.join(",",
+                    "PERCENTAGE",
+                    p.getId(),
+                    p.getName(),
+                    p.getStartDate().toString(),
+                    p.getEndDate().toString(),
+                    String.valueOf(p.getPercentage()));
+        } else if (promotion instanceof CategoryDiscount c) {
+            return String.join(",",
+                    "CATEGORY",
+                    c.getId(),
+                    c.getName(),
+                    c.getStartDate().toString(),
+                    c.getEndDate().toString(),
+                    c.getTargetCategory(),
+                    String.valueOf(c.getPercentage()));
+        } else if (promotion instanceof BulkPurchaseDiscount b) {
+            return String.join(",",
+                    "BULK",
+                    b.getId(),
+                    b.getName(),
+                    b.getStartDate().toString(),
+                    b.getEndDate().toString(),
+                    String.valueOf(b.getMinQuantity()),
+                    String.valueOf(b.getPercentage()));
+        }
+        throw new IllegalArgumentException("Unsupported promotion type for persistence: " + promotion.getClass());
+    }
+    
 }
