@@ -1,17 +1,17 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Representa un producto genérico en el sistema de inventario de GameZone.
  * Esta clase base abstracta define los atributos y métodos comunes para 
  * todos los tipos de productos del sistema.
  */
-public abstract class Accessory {
+public abstract class Accessory extends Product{
 
-    private String identifier;
-    private String title;
-    private double price;
-    private int availableQuantity;
-    private String brand;
+    protected String brand;
+    protected List<Product> compatible;
     /**
      * Construye una nueva instancia de Producto con los detalles especificados.
      * 
@@ -20,52 +20,42 @@ public abstract class Accessory {
      * @param price El precio unitario del producto.
      * @param availableQuantity La cantidad disponible en inventario.
      */
-    public Accessory(String identifier, String title, double price, int availableQuantity, String brand) { this.identifier = identifier;    
-        this.title = title;
-        this.price = price;
-        this.availableQuantity = availableQuantity;
+    public Accessory(String identifier, String title, double price, int availableQuantity,String brand) {
+        super(identifier, title, price, availableQuantity);
         this.brand = brand;
-}
-
-    /**
-     * Obtiene el identificador único del producto.
-     * 
-     * @return El identificador del producto.
-     */
-    public String getIdentifier() {
-        return identifier;
+        this.compatible=new ArrayList<>();
     }
 
-    /**
-     * Obtiene el título o nombre del producto.
-     * 
-     * @return El título del producto.
-     */
-    public String getTitle() { return title; }
+    public Accessory( String identifier, String title, double price, int availableQuantity,String brand, List<Product> compatible) {
+        super(identifier, title, price, availableQuantity);
+        this.brand = brand;
+        this.compatible = compatible;
+    }
 
-    /**
-     * Obtiene el precio del Accesorio.
-     * 
-     * @return El precio del Accesorio.
-     */
-    public double getPrice() { return price; }
+    public List<Product> getCompatible() {
+        return compatible;
+    }
 
-    /**
-     * Obtiene la cantidad disponible en inventario.
-     * 
-     * @return La cantidad disponible.
-     */
-    public int getAvailableQuantity() { return availableQuantity; }
+    public void setCompatible(List<Product> compatible) {
+        this.compatible = compatible;
+    }
 
-    /**
-     * Establece la cantidad disponible en inventario.
-     * 
-     * @param availableQuantity La nueva cantidad a asignar.
-     */
+    @Override
+    public int getAvailableQuantity() {
+        return super.getAvailableQuantity(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+    }
+
+    @Override
     public void setAvailableQuantity(int availableQuantity) {
-        this.availableQuantity = availableQuantity;
+        super.setAvailableQuantity(availableQuantity); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
     }
 
+    
+    
+    /**
+     * Genera agrega los productos compatibles a el accesorio.
+     */
+    public abstract void addProduct(Product p);
     /**
      * Genera una descripción formateada del producto.
      * 

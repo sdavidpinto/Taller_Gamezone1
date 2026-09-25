@@ -64,7 +64,7 @@ public class Main {
         ClientRepository clientRepository = new ClientRepositoryFile(dataFile("clients.txt"));
         SellerRepository sellerRepository = new SellerRepositoryFile(dataFile("sellers.txt"));
         ProductRepository productRepository = new ProductRepositoryFile(dataFile("products.txt"));
-        AccessoryRepository accessoryRepository = new AccessoryRepositoryFile(dataFile("Accesories.txt"));
+        AccessoryRepository accessoryRepository = new AccessoryRepositoryFile(dataFile("Accesories.txt"),productRepository);
         SaleRepository saleRepository = new SaleRepositoryFile(
                 dataFile("sales.txt"),
                 clientRepository::findByIdNumber,

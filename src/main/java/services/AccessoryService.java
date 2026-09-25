@@ -4,6 +4,7 @@ import model.Accessory;
 import persistence.AccessoryRepository;
 
 import java.util.List;
+import model.Product;
 
 /**
  * Capa de servicios para Accessory. Recibe la interfaz AccessoryRepository
@@ -131,4 +132,31 @@ public class AccessoryService {
                 .toList();
     }
     
+    /**
+    * Busca los accesorios compatibles con un producto (consola) específico,
+    * comparando por su identificador.
+    */
+   public List<Accessory> findAccessoriesCompatibleWith(String productId) {
+       return findAll().stream()
+               .filter(a -> a.getCompatible() != null &&
+                       a.getCompatible().stream().anyMatch(p -> p.getIdentifier().equals(productId)))
+               .toList();
+   }
+
+   
+    /**
+     * Agrega un producto (ej: una consola) a la lista de compatibles de un
+     * accesorio existente y persiste el cambio.
+     */
+    public void addCompatibleProduct(String accessoryIdentifier, Product product) {
+        Accessory accessory = accessoryRepository.findByIdentifier(accessoryIdentifier);
+        if (accessory == null) {
+            throw new IllegalArgumentException("Accesorio no encontrado: " + accessoryIdentifier);
+        }
+        if (product == null) {
+            throw new IllegalArgumentException("El producto compatible no puede ser nulo.");
+        }
+        accessory.addProduct(product);
+        accessoryRepository.update(accessory);
+    }
 }
