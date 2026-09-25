@@ -9,6 +9,9 @@ import persistence.SaleRepository;
 import persistence.SaleRepositoryFile;
 import persistence.SellerRepository;
 import persistence.SellerRepositoryFile;
+import persistence.PromotionRepository;
+import persistence.PromotionRepositoryFile;
+import services.PromotionService;
 import services.ClientService;
 import service.ProductService;
 import services.AccessoryService;
@@ -65,6 +68,7 @@ public class Main {
         SellerRepository sellerRepository = new SellerRepositoryFile(dataFile("sellers.txt"));
         ProductRepository productRepository = new ProductRepositoryFile(dataFile("products.txt"));
         AccessoryRepository accessoryRepository = new AccessoryRepositoryFile(dataFile("Accesories.txt"),productRepository);
+        PromotionRepository promotionRepository = new PromotionRepositoryFile(dataFile("promotions.txt"));
         SaleRepository saleRepository = new SaleRepositoryFile(
                 dataFile("sales.txt"),
                 clientRepository::findByIdNumber,
@@ -76,10 +80,11 @@ public class Main {
         SellerService sellerService = new SellerService(sellerRepository);
         ProductService productService = new ProductService(productRepository);
         AccessoryService accesoryService = new AccessoryService(accessoryRepository);
-        SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository,accessoryRepository);
+        PromotionService promotionService = new PromotionService(promotionRepository);
+        SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository,accessoryRepository, promotionService);
 
         // --- Capa ui: recibe los services por constructor ---
-        MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService, accesoryService);
+        MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService, accesoryService, promotionService);
         menu.start();
     }
 }
