@@ -62,4 +62,30 @@ public class PromotionRepositoryFile implements PromotionRepository {
         }
     }
     
+    /**
+     * Carga todas las promociones desde el archivo CSV.
+     * Retorna una lista vacía si el archivo no existe o está vacío.
+     *
+     * @return la lista de promociones cargadas desde el archivo
+     */
+    @Override
+    public List<Promotion> loadAll() {
+        List<Promotion> promotions = new ArrayList<>();
+        File file = new File(filePath);
+        if (!file.exists()) {
+            return promotions;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (!line.isBlank()) {
+                    promotions.add(parseLine(line));
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error leyendo promociones de: " + filePath, e);
+        }
+        return promotions;
+    }
+    
 }
