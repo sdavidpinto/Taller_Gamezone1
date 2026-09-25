@@ -158,3 +158,25 @@ Module: Clase abstracta Accesory y sus especializaciones cable,Controller,Memory
 Persistence: En esta capa Se crean la clase AccesoryRepositorios Y AccessoryRepositoryFile Para mantener la persistencia en un nuevo archivo de tipo TXT depende de la clase Accesory Y clases hijas para encontrar una estructura Y poder leer Construir y reconstruir los archivos de manera eficiente
 
 Service: En esta capa se crea AccesoryService Para el tratamiento Del CRUD Y de las validaciones y excepciones de La creación de cada 1 de los tipos de accesorios Anteriormente mencionados
+
+1. Las tres promociones tienen reglas de cálculo distintas pero comparten atributos y comportamientos comunes. ¿Cómo se refleja esta situación en el diseño de la jerarquía de clases? ¿Qué mecanismo de la programación orientada a objetos permite que cada tipo de promoción calcule su descuento de forma diferente sin que el resto del sistema tenga que conocer los tipos concretos?
+
+Al tener Atributos y comportamientos comunes el mecanismo de la programación orientada a objetos utilizados en estos casos Sería la herencia desde una clase general con sus atributos compartidos Y métodos abstractos que cada sub clase mencionada va a sobrescribir esto mediante el mecanismo del polimorfismo Y la creación de métodos abstractos en la clase abstracta Que es usada como molde de sus clases hijas
+
+
+2. La clase base Promotion no puede implementar el método de cálculo de descuento porque cada tipo tiene una lógica diferente. ¿Cómo se declara este método en la clase base y qué garantiza esta declaración respecto a las subclases?
+
+En este caso Promotion es creada como una clase abstracta,esto permite crear métodos abstractos Que cada clase hija o derivada de promoción debe contener debido a qué Los métodos abstractos en el polimorfismo y en la herencia deben obligatoriamente estar en todas las clases hijas de la clase abstracta el cual lo implementa Y este caso puede ser un gran ejemplo de ello 
+
+3. La regla de negocio establece que solo se aplica la promoción con el mayor descuento. ¿En qué clase se ubica esta lógica de selección y por qué esta ubicación es coherente con el principio de arquitectura en capas? ¿Por qué esta lógica NO debe estar en la clase Sale ni en el menú de consola?
+
+seria en promotion services esto debido a que ella es la que tomara los datos dados por PromotionrepositoryFile para buscar y comparar, es coherente por el modelo de capaz manejado en este proyecto porque sale es el molde menuUi lo que ve el usuario y services se encarga de las comparaciones y condiciones para que se manden los datos y no debe estar en las otras capas porque no es su funcion sencillamente y no puede depender de nadie la capa de modelo 
+
+4. ¿Qué modificaciones son necesarias en la clase Sale y en el método genesrateReceipt para que el recibo muestre el descuento aplicado? ¿Estas modificaciones rompen algo del comportamiento existente en el 
+sistema?
+
+debería guardar el tipo de promoción aplicada y el descuento. Además de ello, al momento de agregar en el método generar el receipt, bueno, en mi caso se llama display y me repetiré a él de tal manera. Es el subtotal sumar el total más el descuento. El descuento en este caso tendría que ser negativo y se determina con un settotal que lo resta a el total original. Y con ello, dependiendo de lo de las otras clases de derivadas de promoción, hacer los cálculos y agregándola a la parte final del mensaje.
+
+5. Las promociones vigentes se determinan comparando la fecha actual con las fechas de inicio y fin de cada promoción. ¿Dónde se realiza esta validación en la clase Promotion, en el PromotionService, o en ambas? Justifique.
+
+Esta validación se divide entre ambas clases, cada una con una responsabilidad distinta. Promotion expone el método isActive(LocalDate date), que hace la comparación real contra startDate y endDate y devuelve un booleano; ahí vive la lógica de cálculo, porque solo depende de los datos propios de la promoción. También tiene una sobrecarga sin argumentos, isActive(), que simplemente llama a isActive(LocalDate.now()) para validar contra la fecha de hoy.

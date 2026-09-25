@@ -1,3 +1,3 @@
-type: Controller; identifier: M1; title: mando; price: 3000.0; stock: 40; brand: play; wired: false
-type: Cable; identifier: C1; title: cable c; price: 2000.0; stock: 40; brand: play; connectionType: C; length: 30
-type: Memory; identifier: ME1; title: memoria; price: 2000.0; stock: 40; brand: play; memoryType: SD; storage: 50
+type: Controller; identifier: M1; title: mando; price: 3000.0; stock: 40; brand: play; wired: false; compatible: PS1
+type: Cable; identifier: C1; title: cable c; price: 2000.0; stock: 40; brand: play; connectionType: C; length: 30; compatible: 
+type: Memory; identifier: ME1; title: memoria; price: 2000.0; stock: 40; brand: play; memoryType: SD; storage: 50; compatible: 
