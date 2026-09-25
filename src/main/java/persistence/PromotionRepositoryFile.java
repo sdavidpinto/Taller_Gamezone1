@@ -88,11 +88,17 @@ public class PromotionRepositoryFile implements PromotionRepository {
         return promotions;
     }
     
-/**
-     * Converts a promotion into a CSV line, including a type discriminator
-     * as the first column so it can be reconstructed correctly on load.
+    /**
+     * Convierte una promoción en una línea CSV, incluyendo un discriminador
+     * de tipo como primera columna para poder reconstruirla correctamente
+     * al momento de cargar.
+     *
+     * @param promotion la promoción a convertir
+     * @return la línea CSV que representa la promoción
+     * @throws IllegalArgumentException si el tipo de promoción no es soportado
      */
-    private String toLine(Promotion promotion) {
+    
+private String toLine(Promotion promotion) {
         if (promotion instanceof PercentageDiscount p) {
             return String.join(",",
                     "PERCENTAGE",
@@ -120,7 +126,39 @@ public class PromotionRepositoryFile implements PromotionRepository {
                     String.valueOf(b.getMinQuantity()),
                     String.valueOf(b.getPercentage()));
         }
-        throw new IllegalArgumentException("Unsupported promotion type for persistence: " + promotion.getClass());
+        throw new IllegalArgumentException("Tipo de promoción no soportado para persistencia: " + promotion.getClass());
     }
-    
+
+    /**
+     * Reconstruye un objeto Promotion a partir de una línea CSV, usando el
+     * discriminador de tipo en la primera columna para determinar la
+     * clase concreta.
+     *
+     * @param line la línea CSV a interpretar
+     * @return la promoción reconstruida (PercentageDiscount, CategoryDiscount
+     *         o BulkPurchaseDiscount)
+     * @throws IllegalStateException si el tipo indicado en la línea es desconocido
+     */
+    private Promotion parseLine(String line) {
+        String[] parts = line.split(",");
+        String type = parts[0];
+        String id = parts[1];
+        String name = parts[2];
+        LocalDate startDate = LocalDate.parse(parts[3]);
+        LocalDate endDate = LocalDate.parse(parts[4]);
+
+        if (type.equals("PERCENTAGE")) {
+            double percentage = Double.parseDouble(parts[5]);
+            return new PercentageDiscount(id, name, startDate, endDate, percentage);
+        } else if (type.equals("CATEGORY")) {
+            String targetCategory = parts[5];
+            double percentage = Double.parseDouble(parts[6]);
+            return new CategoryDiscount(id, name, startDate, endDate, targetCategory, percentage);
+        } else if (type.equals("BULK")) {
+            int minQuantity = Integer.parseInt(parts[5]);
+            double percentage = Double.parseDouble(parts[6]);
+            return new BulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
+        }
+        throw new IllegalStateException("Tipo de promoción desconocido en el archivo: " + type);
+    }
 }
