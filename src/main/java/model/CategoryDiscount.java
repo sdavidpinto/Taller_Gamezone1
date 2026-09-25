@@ -41,7 +41,7 @@ public class CategoryDiscount extends Promotion {
                     "Categoria no valida: " + targetCategory + ". Permitidas: " + VALID_CATEGORIES);
         }
         if (percentage <= 0 || percentage > 100) {
-            throw new IllegalArgumentException("El porcentaje debe estar entre 0 y 100.");
+            throw new IllegalArgumentException("El porcentaje debe estar entre 0 (excluido) y 100.");
         }
         this.targetCategory = targetCategory.trim().toUpperCase();
         this.percentage = percentage;
@@ -86,6 +86,8 @@ public class CategoryDiscount extends Promotion {
 
     /**
      * Revisa si un producto es de la categoria a la que aplica esta promocion.
+     * Los accesorios (Controller, Cable, Memory) heredan de Accessory, asi
+     * que un solo chequeo cubre a los tres.
      *
      * @param product el producto a revisar
      * @return true si el producto pertenece a la categoria objetivo
@@ -96,6 +98,9 @@ public class CategoryDiscount extends Promotion {
         }
         if (targetCategory.equals(CONSOLE)) {
             return product instanceof Console;
+        }
+        if (targetCategory.equals(ACCESSORY)) {
+            return product instanceof Accessory;
         }
         return false;
     }
