@@ -23,6 +23,8 @@ public class Sale {
     private final Seller seller;
     private List<Product> products=new ArrayList<>();
     double total;
+    private String appliedPromotionName;
+    private double discountAmount;
 
     public Sale(String code,Date date, Client client, Seller seller, List<Product> products) {
         this.code=code;
@@ -78,6 +80,21 @@ public class Sale {
         this.total = total;
     }
 
+    public String getAppliedPromotionName() {
+        return appliedPromotionName;
+    }
+
+    public void setAppliedPromotionName(String appliedPromotionName) {
+        this.appliedPromotionName = appliedPromotionName;
+    }
+
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
     /**
  * Metodo calculateTotal para determinar el precio de la venta y enviarlo como parametro de el constructor
  */
@@ -106,6 +123,7 @@ public class Sale {
            "Products:\n" + productosStr +
            "Total: $" + total;
 }
+
     
     
     
