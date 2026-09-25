@@ -1,19 +1,20 @@
 ```mermaid
 classDiagram
     direction TB
-
+ 
     class Main {
         <<Application Entry>>
         + main(String[] args) void
     }
-
+ 
     namespace ui_layer {
         class MenuUI {
             <<UI>>
             + start() void
+            + promotionsMenu() void
         }
     }
-
+ 
     namespace service_layer {
         class SaleService {
             <<Líder Técnico>>
@@ -50,8 +51,19 @@ classDiagram
             + findAll() List~Accessory~
             + findByType(String type) List~Accessory~
         }
+        class PromotionService {
+            <<Desarrollador 2 / Líder Técnico>>
+            + PromotionService(PromotionRepository promotionRepository)
+            + registerPercentageDiscount(String id, String name, LocalDate startDate, LocalDate endDate, double percentage) void
+            + registerCategoryDiscount(String id, String name, LocalDate startDate, LocalDate endDate, String targetCategory, double percentage) void
+            + registerBulkPurchaseDiscount(String id, String name, LocalDate startDate, LocalDate endDate, int minQuantity, double percentage) void
+            + findBestPromotionFor(Sale sale) Promotion
+            + listActivePromotions() List~Promotion~
+            + listAllPromotions() List~Promotion~
+            + findById(String id) Promotion
+        }
     }
-
+ 
     namespace persistence_layer {
         class SaleRepository {
             <<Líder Técnico>>
@@ -78,8 +90,14 @@ classDiagram
             + save(Accessory accessory) void
             + findAll() List~Accessory~
         }
+        class PromotionRepository {
+            <<Interface>>
+            <<Desarrollador 2>>
+            + saveAll(List~Promotion~ promotions) void
+            + loadAll() List~Promotion~
+        }
     }
-
+ 
     namespace model_layer {
         class Person {
             <<Abstract>>
@@ -130,16 +148,10 @@ classDiagram
         }
         class Accessory {
             <<Abstract>>
-            - String identifier
-            - String title
-            - double price
-            - int availableQuantity
             - String brand
-            + getIdentifier() String
-            + getTitle() String
-            + getPrice() double
-            + getAvailableQuantity() int
+            - List~Product~ compatible
             + getBrand() String
+            + getCompatible() List~Product~
             + getDescription()* String
         }
         class Cable {
@@ -162,58 +174,108 @@ classDiagram
             - Seller seller
             - List~Product~ products
             - double total
+            - String appliedPromotionName
+            - double discountAmount
             + calculateTotal(List~Product~ products) double
             + getDate() LocalDate
             + getProducts() List~Product~
+            + getAppliedPromotionName() String
+            + getDiscountAmount() double
+            + Display() String
+        }
+        class Promotion {
+            <<Abstract>>
+            <<Desarrollador 2>>
+            - String id
+            - String name
+            - LocalDate startDate
+            - LocalDate endDate
+            + getId() String
+            + getName() String
+            + isActive() boolean
+            + isActive(LocalDate date) boolean
+            + calculateDiscount(List~Product~ products)* double
+            + getDescription()* String
+        }
+        class PercentageDiscount {
+            <<Desarrollador 2>>
+            - double percentage
+            + calculateDiscount(List~Product~ products) double
+            + getDescription() String
+        }
+        class CategoryDiscount {
+            <<Desarrollador 2>>
+            - String targetCategory
+            - double percentage
+            + isValidCategory(String category)$ boolean
+            + calculateDiscount(List~Product~ products) double
+            + getDescription() String
+        }
+        class BulkPurchaseDiscount {
+            <<Desarrollador 2>>
+            - int minQuantity
+            - double percentage
+            + calculateDiscount(List~Product~ products) double
+            + getDescription() String
         }
     }
-
+ 
     %% Dependencias de entrada y UI
     Main --> MenuUI
-
+ 
     %% Dependencias UI -> Service
     MenuUI --> SaleService
     MenuUI --> ProductService
     MenuUI --> ClientService
     MenuUI --> SellerService
     MenuUI --> AccessoryService
-
+    MenuUI --> PromotionService
+ 
     %% Dependencias Service -> Persistence
     SaleService --> SaleRepository
     SaleService --> ClientRepository
     SaleService --> SellerRepository
     SaleService --> ProductRepository
     SaleService --> AccessoryRepository
+    SaleService --> PromotionService
     ProductService --> ProductRepository
     ClientService --> ClientRepository
     SellerService --> SellerRepository
     AccessoryService --> AccessoryRepository
-
+    PromotionService --> PromotionRepository
+ 
     %% Dependencias de Service hacia Model (relaciones de uso)
     SaleService --> Sale
     ProductService --> Product
     ClientService --> Client
     SellerService --> Seller
     AccessoryService --> Accessory
-
+    PromotionService --> Promotion
+ 
     %% Dependencias de Persistence hacia Model
     SaleRepository --> Sale
     ProductRepository --> Product
     ClientRepository --> Client
     SellerRepository --> Seller
     AccessoryRepository --> Accessory
-
+    PromotionRepository --> Promotion
+ 
     %% Relaciones de Herencia (Triángulos)
     Person <|-- Client
     Person <|-- Seller
     Product <|-- VideoGame
     Product <|-- Console
+    Product <|-- Accessory
     Accessory <|-- Cable
     Accessory <|-- Controller
     Accessory <|-- Memory
-
+    Promotion <|-- PercentageDiscount
+    Promotion <|-- CategoryDiscount
+    Promotion <|-- BulkPurchaseDiscount
+ 
     %% Relaciones de Asociación de la Venta
     Sale --> Client
     Sale --> Seller
     Sale --> Product
 ```
+ 

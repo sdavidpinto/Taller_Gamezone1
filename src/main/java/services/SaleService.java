@@ -6,6 +6,7 @@ import model.Product;
 import model.Sale;
 import model.Seller;
 import model.Accessory;
+import model.Promotion;
 import persistence.ClientRepository;
 import persistence.ProductRepository;
 import persistence.SaleRepository;
@@ -31,14 +32,16 @@ public class SaleService {
     private final SellerRepository sellerRepository;
     private final ProductRepository productRepository;
     private final AccessoryRepository accessoryRepository;
+    private final PromotionService promotionService;
     
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
-                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository) {
+                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService) {
         this.saleRepository = saleRepository;
         this.clientRepository = clientRepository;
         this.sellerRepository = sellerRepository;
         this.productRepository = productRepository;
         this.accessoryRepository=accessoryRepository;
+        this.promotionService=promotionService;
     }
 
     /**
@@ -92,6 +95,7 @@ public class SaleService {
     }
 
         Sale sale = new Sale(code, new Date(), client, seller, products);
+        applyBestPromotion(sale);
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;
@@ -131,5 +135,16 @@ public class SaleService {
     }
 
         return saleRepository.deleteByCode(code);
+    }
+    
+    private void applyBestPromotion(Sale sale) {
+        Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
+        if (bestPromotion == null) {
+            return;
+        }
+        double discount = bestPromotion.calculateDiscount(sale.getProducts());
+        sale.setAppliedPromotionName(bestPromotion.getName());
+        sale.setDiscountAmount(discount);
+        sale.setTotal(sale.getTotal() - discount);
     }
 }

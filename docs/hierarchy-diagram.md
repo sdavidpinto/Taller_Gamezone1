@@ -22,11 +22,6 @@ classDiagram
     }
     class Console {
     }
-
-    Product <|-- VideoGame
-    Product <|-- Console
-
-    %% Accessory Hierarchy
     class Accessory {
         <<abstract>>
     }
@@ -37,7 +32,25 @@ classDiagram
     class Memory {
     }
 
+    Product <|-- VideoGame
+    Product <|-- Console
+    Product <|-- Accessory
     Accessory <|-- Cable
     Accessory <|-- Controller
     Accessory <|-- Memory
+
+    %% Promotion Hierarchy
+    class Promotion {
+        <<abstract>>
+    }
+    class PercentageDiscount {
+    }
+    class CategoryDiscount {
+    }
+    class BulkPurchaseDiscount {
+    }
+
+    Promotion <|-- PercentageDiscount
+    Promotion <|-- CategoryDiscount
+    Promotion <|-- BulkPurchaseDiscount
 ```

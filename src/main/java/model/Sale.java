@@ -23,6 +23,8 @@ public class Sale {
     private final Seller seller;
     private List<Product> products=new ArrayList<>();
     double total;
+    private String appliedPromotionName;
+    private double discountAmount;
 
     public Sale(String code,Date date, Client client, Seller seller, List<Product> products) {
         this.code=code;
@@ -78,6 +80,21 @@ public class Sale {
         this.total = total;
     }
 
+    public String getAppliedPromotionName() {
+        return appliedPromotionName;
+    }
+
+    public void setAppliedPromotionName(String appliedPromotionName) {
+        this.appliedPromotionName = appliedPromotionName;
+    }
+
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
     /**
  * Metodo calculateTotal para determinar el precio de la venta y enviarlo como parametro de el constructor
  */
@@ -93,19 +110,32 @@ public class Sale {
 /**
  * Metodo Display para mostrar la venta cuando se consulte por codigo
  */
-    public String Display() {
+public String Display() {
     StringBuilder productosStr = new StringBuilder();
     for (Product product : products) {
         productosStr.append("  - ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
     }
 
-    return "code: "+code+"\n"+
-           "Sale date: " + date + "\n" +
-           "Client: " + client.getIdNumber()+ "\n" +
-           "Seller: " + seller.getIdNumber()+ "\n" +
-           "Products:\n" + productosStr +
-           "Total: $" + total;
+    double subtotal = total + discountAmount;
+
+    StringBuilder resultado = new StringBuilder();
+    resultado.append("code: ").append(code).append("\n")
+             .append("Sale date: ").append(date).append("\n")
+             .append("Client: ").append(client.getIdNumber()).append("\n")
+             .append("Seller: ").append(seller.getIdNumber()).append("\n")
+             .append("Products:\n").append(productosStr)
+             .append("Subtotal: $").append(subtotal).append("\n");
+
+    if (appliedPromotionName != null && !appliedPromotionName.isEmpty()) {
+        resultado.append("Promotion applied: ").append(appliedPromotionName).append("\n")
+                 .append("Discount: -$").append(discountAmount).append("\n");
+    }
+
+    resultado.append("Total: $").append(total);
+
+    return resultado.toString();
 }
+
     
     
     
