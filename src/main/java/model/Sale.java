@@ -110,18 +110,30 @@ public class Sale {
 /**
  * Metodo Display para mostrar la venta cuando se consulte por codigo
  */
-    public String Display() {
+public String Display() {
     StringBuilder productosStr = new StringBuilder();
     for (Product product : products) {
         productosStr.append("  - ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
     }
 
-    return "code: "+code+"\n"+
-           "Sale date: " + date + "\n" +
-           "Client: " + client.getIdNumber()+ "\n" +
-           "Seller: " + seller.getIdNumber()+ "\n" +
-           "Products:\n" + productosStr +
-           "Total: $" + total;
+    double subtotal = total + discountAmount;
+
+    StringBuilder resultado = new StringBuilder();
+    resultado.append("code: ").append(code).append("\n")
+             .append("Sale date: ").append(date).append("\n")
+             .append("Client: ").append(client.getIdNumber()).append("\n")
+             .append("Seller: ").append(seller.getIdNumber()).append("\n")
+             .append("Products:\n").append(productosStr)
+             .append("Subtotal: $").append(subtotal).append("\n");
+
+    if (appliedPromotionName != null && !appliedPromotionName.isEmpty()) {
+        resultado.append("Promotion applied: ").append(appliedPromotionName).append("\n")
+                 .append("Discount: -$").append(discountAmount).append("\n");
+    }
+
+    resultado.append("Total: $").append(total);
+
+    return resultado.toString();
 }
 
     
