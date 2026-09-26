@@ -911,7 +911,7 @@ public class MenuUI {
         if (startDate == null) return;
         LocalDate endDate = askDate("Fecha de fin:");
         if (endDate == null) return;
-        String targetCategory = askRequiredText("Categoría objetivo (VIDEOGAME / CONSOLE):");
+        String targetCategory = askRequiredText("Categoría objetivo (VIDEOGAME / CONSOLE / ACCESSORY):");
         if (targetCategory == null) return;
         Double percentage = askDouble("Porcentaje de descuento (ej. 10 para 10%):");
         if (percentage == null) return;

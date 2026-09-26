@@ -13,8 +13,10 @@ public class CategoryDiscount extends Promotion {
     public static final String VIDEOGAME = "VIDEOGAME";
     /** Categoria para consolas. */
     public static final String CONSOLE = "CONSOLE";
+    /** Categoria para accesorios (mandos, cables, memorias). */
+    public static final String ACCESSORY = "ACCESSORY";
 
-    private static final List<String> VALID_CATEGORIES = List.of(VIDEOGAME, CONSOLE);
+    private static final List<String> VALID_CATEGORIES = List.of(VIDEOGAME, CONSOLE, ACCESSORY);
 
     private final String targetCategory;
     private final double percentage;
@@ -26,7 +28,7 @@ public class CategoryDiscount extends Promotion {
      * @param name nombre de la promocion
      * @param startDate desde que fecha es valida
      * @param endDate hasta que fecha es valida
-     * @param targetCategory la categoria a la que aplica ("VIDEOGAME" o "CONSOLE")
+     * @param targetCategory la categoria a la que aplica ("VIDEOGAME", "CONSOLE" o "ACCESSORY")
      * @param percentage el porcentaje a descontar, de 0 a 100
      * @throws IllegalArgumentException si la categoria no es valida o el
      *         porcentaje esta fuera de rango
@@ -84,6 +86,8 @@ public class CategoryDiscount extends Promotion {
 
     /**
      * Revisa si un producto es de la categoria a la que aplica esta promocion.
+     * Los accesorios (Controller, Cable, Memory) heredan de Accessory, asi
+     * que un solo chequeo cubre a los tres.
      *
      * @param product el producto a revisar
      * @return true si el producto pertenece a la categoria objetivo
@@ -94,6 +98,9 @@ public class CategoryDiscount extends Promotion {
         }
         if (targetCategory.equals(CONSOLE)) {
             return product instanceof Console;
+        }
+        if (targetCategory.equals(ACCESSORY)) {
+            return product instanceof Accessory;
         }
         return false;
     }

@@ -78,6 +78,9 @@ public class PromotionService {
         requireNonBlank(id, "id");
         requireNonBlank(name, "name");
         requireUniqueId(id);
+        if (!CategoryDiscount.isValidCategory(targetCategory)) {
+            throw new IllegalArgumentException("Categoria no permitida para promociones: " + targetCategory);
+        }
         CategoryDiscount promotion = new CategoryDiscount(id, name, startDate, endDate, targetCategory, percentage);
         saveNewPromotion(promotion);
     }
