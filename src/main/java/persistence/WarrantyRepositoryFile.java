@@ -10,32 +10,29 @@ import java.io.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Implementación de WarrantyRepository basada en archivos.
- * Guarda y recupera garantías desde un archivo CSV, usando un discriminador
- * de tipo para distinguir entre BasicWarranty y ExtendedWarranty. Como una
- * garantía referencia a un Product y a un Sale, esta clase depende de
- * ProductRepository y SaleRepository para resolver esas referencias al
- * reconstruir garantías desde el archivo.
+ * Persiste únicamente los identificadores del producto y la venta
+ * relacionados, y ya no depende de ProductRepository ni SaleRepository
+ * al momento de construirse. Los objetos Product y Sale reales se
+ * resuelven al momento de invocar loadAll(), a través de las funciones
+ * de resolución recibidas, lo que rompe la dependencia circular que
+ * existía antes (SaleService -> WarrantyService -> WarrantyRepository
+ * -> SaleService).
  */
 public class WarrantyRepositoryFile implements WarrantyRepository {
 
     private final String filePath;
-    private final ProductRepository productRepository;
-    private final SaleRepository saleRepository;
 
     /**
      * Crea un nuevo WarrantyRepositoryFile.
      *
      * @param filePath la ruta del archivo CSV usado para persistencia
-     * @param productRepository usado para resolver referencias a productos por identificador
-     * @param saleRepository usado para resolver referencias a ventas por código
      */
-    public WarrantyRepositoryFile(String filePath, ProductRepository productRepository, SaleRepository saleRepository) {
+    public WarrantyRepositoryFile(String filePath) {
         this.filePath = filePath;
-        this.productRepository = productRepository;
-        this.saleRepository = saleRepository;
         createFileIfNotExists();
     }
 
@@ -59,69 +56,6 @@ public class WarrantyRepositoryFile implements WarrantyRepository {
     }
 
     /**
-     * Carga todas las garantías desde el archivo CSV.
-     * Retorna una lista vacía si el archivo no existe o está vacío.
-     *
-     * @return la lista de garantías cargadas desde el archivo
-     */
-    @Override
-    public List<Warranty> loadAll() {
-        List<Warranty> warranties = new ArrayList<>();
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return warranties;
-        }
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (!line.isBlank()) {
-                    Warranty warranty = parseLine(line);
-                    if (warranty != null) {
-                        warranties.add(warranty);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error leyendo garantías de: " + filePath, e);
-        }
-        return warranties;
-    }
-
-    /**
-     * Reconstruye un objeto Warranty a partir de una línea CSV, usando el
-     * discriminador de tipo para determinar la clase concreta, y resolviendo
-     * el producto y la venta asociados a través de los repositorios inyectados.
-     * Si el producto o la venta referenciados ya no se encuentran, la línea
-     * se omite y se retorna null.
-     *
-     * @param line la línea CSV a interpretar
-     * @return la garantía reconstruida, o null si el producto o la venta
-     *         referenciados no pudieron resolverse
-     * @throws IllegalStateException si el tipo indicado en la línea es desconocido
-     */
-    private Warranty parseLine(String line) {
-        String[] parts = line.split(",");
-        String type = parts[0];
-        String id = parts[1];
-        String productId = parts[2];
-        String saleCode = parts[3];
-        LocalDate startDate = LocalDate.parse(parts[4]);
-
-        Product product = productRepository.findByIdentifier(productId);
-        Sale sale = saleRepository.findByCode(saleCode);
-        if (product == null || sale == null) {
-            return null;
-        }
-
-        if (type.equals("BASIC")) {
-            return new BasicWarranty(id, product, sale, startDate);
-        } else if (type.equals("EXTENDED")) {
-            return new ExtendedWarranty(id, product, sale, startDate);
-        }
-        throw new IllegalStateException("Tipo de garantía desconocido en el archivo: " + type);
-    }  
-    
-        /**
      * Guarda la lista completa de garantías en el archivo CSV,
      * sobrescribiendo cualquier contenido anterior.
      *
@@ -140,10 +74,40 @@ public class WarrantyRepositoryFile implements WarrantyRepository {
     }
 
     /**
-     * Convierte una garantía en una línea CSV, incluyendo un discriminador
-     * de tipo y los identificadores de su producto y venta asociados (no
-     * los objetos completos, para mantener el archivo compacto y evitar
-     * duplicar datos ya almacenados en los archivos de productos y ventas).
+     * Carga todas las garantías desde el archivo CSV, resolviendo el
+     * producto y la venta de cada una mediante las funciones indicadas.
+     * Retorna una lista vacía si el archivo no existe o está vacío.
+     *
+     * @param productResolver una función que busca un Product por su identificador
+     * @param saleResolver una función que busca un Sale por su código
+     * @return la lista de garantías cargadas desde el archivo
+     */
+    @Override
+    public List<Warranty> loadAll(Function<String, Product> productResolver, Function<String, Sale> saleResolver) {
+        List<Warranty> warranties = new ArrayList<>();
+        File file = new File(filePath);
+        if (!file.exists()) {
+            return warranties;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (!line.isBlank()) {
+                    Warranty warranty = parseLine(line, productResolver, saleResolver);
+                    if (warranty != null) {
+                        warranties.add(warranty);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error leyendo garantías de: " + filePath, e);
+        }
+        return warranties;
+    }
+
+    /**
+     * Convierte una garantía en una línea CSV, guardando solo los
+     * identificadores del producto y la venta asociados.
      *
      * @param warranty la garantía a convertir
      * @return la línea CSV que representa la garantía
@@ -164,5 +128,40 @@ public class WarrantyRepositoryFile implements WarrantyRepository {
                 warranty.getProduct().getIdentifier(),
                 warranty.getSale().getCode(),
                 warranty.getStartDate().toString());
+    }
+
+    /**
+     * Reconstruye un objeto Warranty a partir de una línea CSV, resolviendo
+     * el producto y la venta asociados mediante las funciones de resolución
+     * indicadas, en lugar de repositorios inyectados. Si alguno no puede
+     * resolverse, la línea se omite y se retorna null.
+     *
+     * @param line la línea CSV a interpretar
+     * @param productResolver una función que busca un Product por su identificador
+     * @param saleResolver una función que busca un Sale por su código
+     * @return la garantía reconstruida, o null si el producto o la venta
+     *         referenciados no pudieron resolverse
+     * @throws IllegalStateException si el tipo indicado en la línea es desconocido
+     */
+    private Warranty parseLine(String line, Function<String, Product> productResolver, Function<String, Sale> saleResolver) {
+        String[] parts = line.split(",");
+        String type = parts[0];
+        String id = parts[1];
+        String productId = parts[2];
+        String saleCode = parts[3];
+        LocalDate startDate = LocalDate.parse(parts[4]);
+
+        Product product = productResolver.apply(productId);
+        Sale sale = saleResolver.apply(saleCode);
+        if (product == null || sale == null) {
+            return null;
+        }
+
+        if (type.equals("BASIC")) {
+            return new BasicWarranty(id, product, sale, startDate);
+        } else if (type.equals("EXTENDED")) {
+            return new ExtendedWarranty(id, product, sale, startDate);
+        }
+        throw new IllegalStateException("Tipo de garantía desconocido en el archivo: " + type);
     }
 }
