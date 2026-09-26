@@ -54,7 +54,8 @@ public class SaleService {
      * ya armados). Valida existencia de cliente/vendedor/productos y
      * disponibilidad de stock, y descuenta el stock vendido.
      */
-    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers, List<String> extendedWarrantyProductIds) {
+    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber,List<String> productIdentifiers, List<String> accessoryIdentifiers,List<String> extendedWarrantyProductIds) {
+
         if ((productIdentifiers == null || productIdentifiers.isEmpty())
                 && (accessoryIdentifiers == null || accessoryIdentifiers.isEmpty())) {
             throw new IllegalArgumentException("La venta debe incluir al menos un producto o accesorio");
@@ -63,67 +64,68 @@ public class SaleService {
         if (client == null) {
             throw new IllegalArgumentException("Cliente no encontrado: " + clientIdNumber);
         }
-
         Seller seller = sellerRepository.findByIdNumber(sellerIdNumber);
         if (seller == null) {
             throw new IllegalArgumentException("Vendedor no encontrado: " + sellerIdNumber);
         }
 
+
         List<Product> products = new ArrayList<>();
-    if (productIdentifiers != null) {
-        for (String id : productIdentifiers) {
-            Product p = productRepository.findByIdentifier(id);
-            if (p == null) {
-                throw new IllegalArgumentException("Producto no encontrado: " + id);
+        if (productIdentifiers != null) {
+            for (String id : productIdentifiers) {
+                Product p = productRepository.findByIdentifier(id);
+                if (p == null) throw new IllegalArgumentException("Producto no encontrado: " + id);
+                if (p.getAvailableQuantity() <= 0) throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
+                products.add(p);
             }
-            if (p.getAvailableQuantity() <= 0) {
-                throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
-            }
-            products.add(p); 
         }
-    }
-    if (accessoryIdentifiers != null) {
-        for (String id : accessoryIdentifiers) {
-            Accessory a = accessoryRepository.findByIdentifier(id);
-            if (a == null) {
-                throw new IllegalArgumentException("Producto no encontrado: " + id);
+        if (accessoryIdentifiers != null) {
+            for (String id : accessoryIdentifiers) {
+                Accessory a = accessoryRepository.findByIdentifier(id);
+                if (a == null) throw new IllegalArgumentException("Producto no encontrado: " + id);
+                if (a.getAvailableQuantity() <= 0) throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
+                products.add(a);
             }
-            if (a.getAvailableQuantity() <= 0) {
-                throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
-            }
-            products.add(a);
         }
-    }
 
         Sale sale = new Sale(code, new Date(), client, seller, products);
-        applyBestPromotion(sale);
-        
+
         for (Product p : products) {
             if (p instanceof Console) {
                 warrantyService.assignBasicWarranty(p, sale, LocalDate.now());
             }
         }
-        
-        
-        double extendedWarrantyCost = 0;
+
+        applyBestPromotion(sale);
+
+        double warrantyCost = 0;
         if (extendedWarrantyProductIds != null) {
             for (String id : extendedWarrantyProductIds) {
                 Product warrantyProduct = null;
                 for (Product p : products) {
-                    if (p.getIdentifier().equals(id)) {
-                        warrantyProduct = p;
-                        break;
-                    }
+                    if (p.getIdentifier().equals(id)) { warrantyProduct = p; break; }
                 }
                 if (warrantyProduct == null) {
                     throw new IllegalArgumentException("Producto no encontrado para garantia extendida: " + id);
                 }
                 ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
-                extendedWarrantyCost += extendedWarranty.getAdditionalCost();
+                warrantyCost += extendedWarranty.getAdditionalCost();
             }
         }
-        
-        sale.setTotal(sale.getTotal() + extendedWarrantyCost);
+
+        sale.setWarrantyCost(warrantyCost);
+        sale.setTotal(sale.getTotal() + warrantyCost);
+
+        // Recién aquí, con la venta completa ya construida sin errores, se toca el inventario
+        for (Product p : products) {
+            p.setAvailableQuantity(p.getAvailableQuantity() - 1);
+            if (p instanceof Accessory) {
+                accessoryRepository.update((Accessory) p);
+            } else {
+                productRepository.update(p);
+            }
+        }
+
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;
