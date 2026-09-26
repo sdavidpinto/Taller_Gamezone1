@@ -96,6 +96,7 @@ public class SaleService {
     }
 
         Sale sale = new Sale(code, new Date(), client, seller, products);
+        applyBestPromotion(sale);
         
         for (Product p : products) {
             if (p instanceof Console) {
@@ -103,7 +104,6 @@ public class SaleService {
             }
         }
         
-        applyBestPromotion(sale);
         
         double extendedWarrantyCost = 0;
         if (extendedWarrantyProductIds != null) {
