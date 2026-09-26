@@ -598,10 +598,14 @@ public class MenuUI {
             List<String> accessoryIds = accesoriosTexto.isBlank()
                     ? new ArrayList<>()
                     : Arrays.asList(accesoriosTexto.split("\\s*,\\s*"));
-
+            String garantiaExtendidaTexto = JOptionPane.showInputDialog("Identificadores de productos con garantía extendida, separados por coma (opcional, deja vacío si no aplica):");
+            if (garantiaExtendidaTexto == null) return; // el usuario canceló
+            List<String> extendedWarrantyProductIds = garantiaExtendidaTexto.isBlank()
+                    ? new ArrayList<>()
+                    : Arrays.asList(garantiaExtendidaTexto.split("\\s*,\\s*"));
             
             try {
-                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds);
+                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds, extendedWarrantyProductIds);
                 registrado = true;
             } catch (IllegalArgumentException | IllegalStateException e) {
                 JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores de producto e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
