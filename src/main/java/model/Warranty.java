@@ -9,6 +9,7 @@ public abstract class Warranty {
     private final Sale sale;
     private final LocalDate startDate;
     private final int durationMonths;
+    private final LocalDate endDate;
 
     protected Warranty(String id, Product product, Sale sale, LocalDate startDate, int durationMonths) {
         if (id == null || id.isBlank()) {
@@ -31,6 +32,7 @@ public abstract class Warranty {
         this.sale = sale;
         this.startDate = startDate;
         this.durationMonths = durationMonths;
+        this.endDate = startDate.plusMonths(durationMonths);
     }
 
     public String getId() { return id; }
@@ -42,4 +44,6 @@ public abstract class Warranty {
     public LocalDate getStartDate() { return startDate; }
 
     public int getDurationMonths() { return durationMonths; }
+
+    public LocalDate getEndDate() { return endDate; }
 }
