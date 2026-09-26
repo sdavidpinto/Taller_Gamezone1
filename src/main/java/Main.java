@@ -13,7 +13,7 @@ import persistence.PromotionRepository;
 import persistence.PromotionRepositoryFile;
 import services.PromotionService;
 import services.ClientService;
-import service.ProductService;
+import services.ProductService;
 import services.AccessoryService;
 import services.SaleService;
 import services.SellerService;

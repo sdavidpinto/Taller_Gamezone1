@@ -15,7 +15,7 @@ import model.Memory;
 import model.Promotion;
 import services.AccessoryService;
 import services.ClientService;
-import service.ProductService;
+import services.ProductService;
 import services.SaleService;
 import services.SellerService;
 import services.PromotionService;
