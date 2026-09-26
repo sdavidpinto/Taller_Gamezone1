@@ -18,6 +18,7 @@ import persistence.AccessoryRepository;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import model.ExtendedWarranty;
 
 /**
  * Capa de servicios para Sale. Aquí viven las reglas de negocio
@@ -107,6 +108,26 @@ public class SaleService {
         }
         
         applyBestPromotion(sale);
+        
+        double extendedWarrantyCost = 0;
+        if (extendedWarrantyProductIds != null) {
+            for (String id : extendedWarrantyProductIds) {
+                Product warrantyProduct = null;
+                for (Product p : products) {
+                    if (p.getIdentifier().equals(id)) {
+                        warrantyProduct = p;
+                        break;
+                    }
+                }
+                if (warrantyProduct == null) {
+                    throw new IllegalArgumentException("Producto no encontrado para garantia extendida: " + id);
+                }
+                ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
+                extendedWarrantyCost += extendedWarranty.getAdditionalCost();
+            }
+        }
+        
+        sale.setTotal(sale.getTotal() + extendedWarrantyCost);
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;
