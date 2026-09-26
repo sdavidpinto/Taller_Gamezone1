@@ -120,4 +120,49 @@ public class WarrantyRepositoryFile implements WarrantyRepository {
         }
         throw new IllegalStateException("Tipo de garantía desconocido en el archivo: " + type);
     }  
+    
+        /**
+     * Guarda la lista completa de garantías en el archivo CSV,
+     * sobrescribiendo cualquier contenido anterior.
+     *
+     * @param warranties la lista de garantías a guardar
+     */
+    @Override
+    public void saveAll(List<Warranty> warranties) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
+            for (Warranty warranty : warranties) {
+                bw.write(toLine(warranty));
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error guardando garantías en: " + filePath, e);
+        }
+    }
+
+    /**
+     * Convierte una garantía en una línea CSV, incluyendo un discriminador
+     * de tipo y los identificadores de su producto y venta asociados (no
+     * los objetos completos, para mantener el archivo compacto y evitar
+     * duplicar datos ya almacenados en los archivos de productos y ventas).
+     *
+     * @param warranty la garantía a convertir
+     * @return la línea CSV que representa la garantía
+     * @throws IllegalArgumentException si el tipo de garantía no es soportado
+     */
+    private String toLine(Warranty warranty) {
+        String type;
+        if (warranty instanceof BasicWarranty) {
+            type = "BASIC";
+        } else if (warranty instanceof ExtendedWarranty) {
+            type = "EXTENDED";
+        } else {
+            throw new IllegalArgumentException("Tipo de garantía no soportado para persistencia: " + warranty.getClass());
+        }
+        return String.join(",",
+                type,
+                warranty.getId(),
+                warranty.getProduct().getIdentifier(),
+                warranty.getSale().getCode(),
+                warranty.getStartDate().toString());
+    }
 }
