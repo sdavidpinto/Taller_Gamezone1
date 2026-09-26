@@ -75,4 +75,49 @@ public class WarrantyService {
         return warranty;
     }
     
+        /**
+     * Busca la garantía asociada a un producto específico dentro de una
+     * venta específica.
+     *
+     * @param productId el identificador del producto
+     * @param saleCode el código de la venta
+     * @return la garantía encontrada, o null si no existe
+     */
+    public Warranty findWarrantyByProduct(String productId, String saleCode) {
+        for (Warranty warranty : warrantyRepository.loadAll()) {
+            boolean sameProduct = warranty.getProduct().getIdentifier().equals(productId);
+            boolean sameSale = warranty.getSale().getCode().equals(saleCode);
+            if (sameProduct && sameSale) {
+                return warranty;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Retorna todas las garantías registradas.
+     *
+     * @return una lista con todas las garantías
+     */
+    public List<Warranty> listAllWarranties() {
+        return warrantyRepository.loadAll();
+    }
+
+    /**
+     * Retorna las garantías que están vigentes actualmente (la fecha de hoy
+     * cae dentro de su período de cobertura).
+     *
+     * @return una lista con solo las garantías actualmente vigentes
+     */
+    public List<Warranty> listActiveWarranties() {
+        List<Warranty> activeWarranties = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        for (Warranty warranty : warrantyRepository.loadAll()) {
+            if (warranty.isActive(today)) {
+                activeWarranties.add(warranty);
+            }
+        }
+        return activeWarranties;
+    }
+    
 }
