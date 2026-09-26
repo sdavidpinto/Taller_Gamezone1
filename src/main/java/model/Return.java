@@ -18,6 +18,7 @@ public class Return {
         this.originalSale = originalSale;
         this.returnedProducts = returnedProducts;
         this.reason = reason;
+        this.refundAmount = calculateRefundAmount();
     }
 
     public String getId() {
@@ -43,5 +44,14 @@ public class Return {
     public double getRefundAmount() {
         return refundAmount;
     }
-
+    public double calculateRefundAmount() {
+        double amount = 0;
+        if (returnedProducts != null) {
+            for (Product product : returnedProducts) {
+                amount += product.getPrice();
+            }
+        }
+        this.refundAmount = amount;
+        return amount;
+    }
 }
