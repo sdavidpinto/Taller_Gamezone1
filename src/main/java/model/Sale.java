@@ -108,7 +108,13 @@ public class Sale {
         }
         return Total;
     }
-        public boolean canBeReturned() {
+    /**
+     * Checks whether this sale is still within the 30-calendar-day window
+     * in which a return can be registered.
+     *
+     * @return true if today's date is within 30 days of the sale date.
+     */
+    public boolean canBeReturned() {
         long daysSinceSale = ChronoUnit.DAYS.between(date, LocalDate.now());
         return daysSinceSale >= 0 && daysSinceSale <= 30;
     }
