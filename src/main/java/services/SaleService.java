@@ -33,15 +33,17 @@ public class SaleService {
     private final ProductRepository productRepository;
     private final AccessoryRepository accessoryRepository;
     private final PromotionService promotionService;
+    private final WarrantyService warrantyService;
     
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
-                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService) {
+                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService,WarrantyService warrantyService) {
         this.saleRepository = saleRepository;
         this.clientRepository = clientRepository;
         this.sellerRepository = sellerRepository;
         this.productRepository = productRepository;
         this.accessoryRepository=accessoryRepository;
         this.promotionService=promotionService;
+         this.warrantyService=warrantyService;
     }
 
     /**
@@ -49,7 +51,7 @@ public class SaleService {
      * ya armados). Valida existencia de cliente/vendedor/productos y
      * disponibilidad de stock, y descuenta el stock vendido.
      */
-    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers ) {
+    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers, List<String> extendedWarrantyProductIds) {
         if ((productIdentifiers == null || productIdentifiers.isEmpty())
                 && (accessoryIdentifiers == null || accessoryIdentifiers.isEmpty())) {
             throw new IllegalArgumentException("La venta debe incluir al menos un producto o accesorio");
