@@ -46,4 +46,14 @@ public abstract class Warranty {
     public int getDurationMonths() { return durationMonths; }
 
     public LocalDate getEndDate() { return endDate; }
+
+    public boolean isActive() {
+        return isActive(LocalDate.now());
+    }
+
+    public boolean isActive(LocalDate date) {
+        return !date.isBefore(startDate) && !date.isAfter(endDate);
+    }
+
+    public abstract String generateWarrantyCertificate();
 }
