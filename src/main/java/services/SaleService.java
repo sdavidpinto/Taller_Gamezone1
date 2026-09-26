@@ -70,18 +70,16 @@ public class SaleService {
         }
 
         List<Product> products = new ArrayList<>();
-        if (productIdentifiers != null) {
-    for (String id : productIdentifiers) {
-        Product p = productRepository.findByIdentifier(id);
+    if (productIdentifiers != null) {
+        for (String id : productIdentifiers) {
+            Product p = productRepository.findByIdentifier(id);
             if (p == null) {
                 throw new IllegalArgumentException("Producto no encontrado: " + id);
             }
             if (p.getAvailableQuantity() <= 0) {
                 throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
             }
-            products.add(p);
-            p.setAvailableQuantity(p.getAvailableQuantity() - 1);
-            productRepository.update(p);
+            products.add(p); 
         }
     }
     if (accessoryIdentifiers != null) {
@@ -94,8 +92,6 @@ public class SaleService {
                 throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
             }
             products.add(a);
-            a.setAvailableQuantity(a.getAvailableQuantity() - 1);
-            accessoryRepository.update(a);
         }
     }
 
