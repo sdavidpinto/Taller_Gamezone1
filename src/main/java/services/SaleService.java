@@ -1,11 +1,13 @@
 
 package services;
 
+import java.time.LocalDate;
 import model.Client;
 import model.Product;
 import model.Sale;
 import model.Seller;
 import model.Accessory;
+import model.Console;
 import model.Promotion;
 import persistence.ClientRepository;
 import persistence.ProductRepository;
@@ -16,6 +18,7 @@ import persistence.AccessoryRepository;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import model.ExtendedWarranty;
 
 /**
  * Capa de servicios para Sale. Aquí viven las reglas de negocio
@@ -33,15 +36,17 @@ public class SaleService {
     private final ProductRepository productRepository;
     private final AccessoryRepository accessoryRepository;
     private final PromotionService promotionService;
+    private final WarrantyService warrantyService;
     
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
-                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService) {
+                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService,WarrantyService warrantyService) {
         this.saleRepository = saleRepository;
         this.clientRepository = clientRepository;
         this.sellerRepository = sellerRepository;
         this.productRepository = productRepository;
         this.accessoryRepository=accessoryRepository;
         this.promotionService=promotionService;
+         this.warrantyService=warrantyService;
     }
 
     /**
@@ -49,7 +54,7 @@ public class SaleService {
      * ya armados). Valida existencia de cliente/vendedor/productos y
      * disponibilidad de stock, y descuenta el stock vendido.
      */
-    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers ) {
+    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers, List<String> extendedWarrantyProductIds) {
         if ((productIdentifiers == null || productIdentifiers.isEmpty())
                 && (accessoryIdentifiers == null || accessoryIdentifiers.isEmpty())) {
             throw new IllegalArgumentException("La venta debe incluir al menos un producto o accesorio");
@@ -95,7 +100,34 @@ public class SaleService {
     }
 
         Sale sale = new Sale(code, new Date(), client, seller, products);
+        
+        for (Product p : products) {
+            if (p instanceof Console) {
+                warrantyService.assignBasicWarranty(p, sale, LocalDate.now());
+            }
+        }
+        
         applyBestPromotion(sale);
+        
+        double extendedWarrantyCost = 0;
+        if (extendedWarrantyProductIds != null) {
+            for (String id : extendedWarrantyProductIds) {
+                Product warrantyProduct = null;
+                for (Product p : products) {
+                    if (p.getIdentifier().equals(id)) {
+                        warrantyProduct = p;
+                        break;
+                    }
+                }
+                if (warrantyProduct == null) {
+                    throw new IllegalArgumentException("Producto no encontrado para garantia extendida: " + id);
+                }
+                ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
+                extendedWarrantyCost += extendedWarranty.getAdditionalCost();
+            }
+        }
+        
+        sale.setTotal(sale.getTotal() + extendedWarrantyCost);
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;

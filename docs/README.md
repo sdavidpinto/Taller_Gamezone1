@@ -21,6 +21,8 @@ Taller_Gamezone1/
 │   ├── layers-diagram.md
 │   ├── promotion-analysis.md
 │   ├── promotion-class-diagram.md
+│   ├── warranty-analysis.md
+│   ├── warranty-class-diagram.md
 │   └── ai-usage/
 │       ├── leader-ai-log.md
 │       ├── developer1-ai-log.md
@@ -47,7 +49,10 @@ Taller_Gamezone1/
             │   ├── Promotion.java
             │   ├── PercentageDiscount.java
             │   ├── CategoryDiscount.java
-            │   └── BulkPurchaseDiscount.java
+            │   ├── BulkPurchaseDiscount.java
+            │   ├── Warranty.java
+            │   ├── BasicWarranty.java
+            │   └── ExtendedWarranty.java
             ├── persistence/
             │   ├── ClientRepository.java
             │   ├── ClientRepositoryFile.java
@@ -60,14 +65,17 @@ Taller_Gamezone1/
             │   ├── AccessoryRepository.java
             │   ├── AccessoryRepositoryFile.java
             │   ├── PromotionRepository.java
-            │   └── PromotionRepositoryFile.java
+            │   ├── PromotionRepositoryFile.java
+            │   ├── WarrantyRepository.java
+            │   └── WarrantyRepositoryFile.java
             ├── services/
             │   ├── ClientService.java
             │   ├── ProductService.java
             │   ├── SaleService.java
             │   ├── SellerService.java
             │   ├── AccessoryService.java
-            │   └── PromotionService.java
+            │   ├── PromotionService.java
+            │   └── WarrantyService.java
             └── ui/
                 └── MenuUI.java
 ```
@@ -91,6 +99,8 @@ Diagramas de diseño en [`docs/`](./docs/).
 - Registrar ventas y consultar historial (general, por cliente, por vendedor).
 - Gestionar promociones: registrar descuentos por porcentaje, por categoría de producto o por volumen de compra; listar todas las promociones o solo las vigentes.
 - Aplicación automática de la mejor promoción vigente al registrar una venta, mostrando subtotal, promoción aplicada y descuento en el detalle de la venta.
+- Asignación automática de garantía básica a las consolas al registrar una venta, y garantía extendida opcional con costo adicional del 10% del precio del producto.
+- Consultar garantías por producto y venta, listar todas, listar vigentes y listar próximas a vencer.
 - Carga y guardado automático de datos en cada ejecución.
 
 ## Documentación adicional
@@ -101,4 +111,6 @@ Diagramas de diseño en [`docs/`](./docs/).
 - [`docs/layers-diagram.md`](./docs/layers-diagram.md)
 - [`docs/promotion-analysis.md`](./docs/promotion-analysis.md)
 - [`docs/promotion-class-diagram.md`](./docs/promotion-class-diagram.md)
+- [`docs/warranty-analysis.md`](./docs/warranty-analysis.md)
+- [`docs/warranty-class-diagram.md`](./docs/warranty-class-diagram.md)
 - [`docs/ai-usage/`](./docs/ai-usage/)

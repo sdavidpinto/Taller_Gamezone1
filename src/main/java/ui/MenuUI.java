@@ -24,6 +24,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.util.Arrays;
 import java.util.List;
+import model.Warranty;
+import services.WarrantyService;
 
 /**
  * Capa de presentación (UI) con JOptionPane.
@@ -42,15 +44,17 @@ public class MenuUI {
     private final SaleService saleService;
     private final AccessoryService accessoryService;
     private final PromotionService promotionService;
+    private final WarrantyService warrantyService;
     
     public MenuUI(ClientService clientService, SellerService sellerService,
-                   ProductService productService, SaleService saleService, AccessoryService accessoryService,PromotionService promotionService) {
+                   ProductService productService, SaleService saleService, AccessoryService accessoryService,PromotionService promotionService, WarrantyService warrantyService) {
         this.clientService = clientService;
         this.sellerService = sellerService;
         this.productService = productService;
         this.saleService = saleService;
         this.accessoryService = accessoryService;
         this.promotionService = promotionService;
+        this.warrantyService = warrantyService;
     }
 
     /**
@@ -67,6 +71,7 @@ public class MenuUI {
                     + "4. Ventas\n"
                     + "5. Accesorios\n"
                     + "6. Promociones\n"
+                    + "7. Garantías\n"
                     + "0. Salir";
             String entrada = JOptionPane.showInputDialog(null, menuPrincipal, "Menú principal", JOptionPane.PLAIN_MESSAGE);
 
@@ -83,6 +88,7 @@ public class MenuUI {
                 case 4 -> salesMenu();
                 case 5 -> accessoriesMenu();
                 case 6 -> promotionsMenu();
+                case 7 -> warrantiesMenu();
                 case 0 -> JOptionPane.showMessageDialog(null, "Hasta luego.");
                 default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
             }
@@ -598,10 +604,14 @@ public class MenuUI {
             List<String> accessoryIds = accesoriosTexto.isBlank()
                     ? new ArrayList<>()
                     : Arrays.asList(accesoriosTexto.split("\\s*,\\s*"));
-
+            String garantiaExtendidaTexto = JOptionPane.showInputDialog("Identificadores de productos con garantía extendida, separados por coma (opcional, deja vacío si no aplica):");
+            if (garantiaExtendidaTexto == null) return; // el usuario canceló
+            List<String> extendedWarrantyProductIds = garantiaExtendidaTexto.isBlank()
+                    ? new ArrayList<>()
+                    : Arrays.asList(garantiaExtendidaTexto.split("\\s*,\\s*"));
             
             try {
-                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds);
+                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds, extendedWarrantyProductIds);
                 registrado = true;
             } catch (IllegalArgumentException | IllegalStateException e) {
                 JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores de producto e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
@@ -985,6 +995,66 @@ public class MenuUI {
         String id = JOptionPane.showInputDialog("ID de la promoción a buscar:");
         Promotion p = promotionService.findById(id);
         JOptionPane.showMessageDialog(null, p != null ? p.getDescription() : "No se encontró la promoción.");
+    }
+    
+    // ================= GARANTIAS =================
+
+    private void warrantiesMenu() {
+        String menu = "=== Garantías ===\n"
+                + "1. Buscar garantía por producto y venta\n"
+                + "2. Listar todas\n"
+                + "3. Listar vigentes\n"
+                + "4. Listar próximas a vencer\n"
+                + "0. Volver";
+        String entrada = JOptionPane.showInputDialog(null, menu, "Garantías", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) return;
+
+        switch (parseOption(entrada)) {
+            case 1 -> searchWarranty();
+            case 2 -> listAllWarranties();
+            case 3 -> listActiveWarranties();
+            case 4 -> listWarrantiesExpiringSoon();
+            case 0 -> { /* volver */ }
+            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        }
+    }
+
+    private void searchWarranty() {
+        String productId = askRequiredText("Identifier del producto:");
+        if (productId == null) return;
+        String saleCode = askRequiredText("Código de la venta:");
+        if (saleCode == null) return;
+
+        Warranty w = warrantyService.findWarrantyByProduct(productId, saleCode);
+        JOptionPane.showMessageDialog(null, w != null ? w.generateWarrantyCertificate() : "No se encontró una garantía para ese producto y venta.");
+    }
+
+    private void listAllWarranties() {
+        displayWarrantyList(warrantyService.listAllWarranties(), "No hay garantías registradas.");
+    }
+
+    private void listActiveWarranties() {
+        displayWarrantyList(warrantyService.listActiveWarranties(), "No hay garantías vigentes.");
+    }
+
+    private void listWarrantiesExpiringSoon() {
+        Integer dias = askInt("¿Con cuántos días de anticipación quieres revisar?");
+        if (dias == null) return;
+
+        displayWarrantyList(warrantyService.listWarrantiesExpiringSoon(dias), "No hay garantías próximas a vencer en ese período.");
+    }
+
+    private void displayWarrantyList(List<Warranty> warranties, String emptyMessage) {
+        if (warranties.isEmpty()) {
+            JOptionPane.showMessageDialog(null, emptyMessage);
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 70);
+        JScrollPane tabla = new JScrollPane(salida);
+        for (Warranty w : warranties) {
+            salida.append(w.generateWarrantyCertificate() + "\n\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
     }
     
 }

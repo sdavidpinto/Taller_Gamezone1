@@ -180,3 +180,25 @@ debería guardar el tipo de promoción aplicada y el descuento. Además de ello,
 5. Las promociones vigentes se determinan comparando la fecha actual con las fechas de inicio y fin de cada promoción. ¿Dónde se realiza esta validación en la clase Promotion, en el PromotionService, o en ambas? Justifique.
 
 Esta validación se divide entre ambas clases, cada una con una responsabilidad distinta. Promotion expone el método isActive(LocalDate date), que hace la comparación real contra startDate y endDate y devuelve un booleano; ahí vive la lógica de cálculo, porque solo depende de los datos propios de la promoción. También tiene una sobrecarga sin argumentos, isActive(), que simplemente llama a isActive(LocalDate.now()) para validar contra la fecha de hoy.
+
+
+1. Los dos tipos de garantía tienen atributos comunes (fechas, producto asociado) pero también atributos y comportamientos diferentes (duración, cobertura, costo). ¿Cómo se refleja esta situación en el diseño de la jerarquía de clases? ¿Qué mecanismo de la programación orientada a objetos permite que cada tipo de garantía tenga su propia duración sin duplicar código?
+
+al tener Atributos y comportamientos comunes el mecanismo de la programación orientada a objetos utilizados en estos casos Sería la herencia desde una clase general con sus atributos compartidos Y métodos abstractos que cada sub clase mencionada va a sobrescribir esto mediante el mecanismo del polimorfismo Y la creación de métodos abstractos en la clase abstracta Que es usada como molde de sus clases hijas
+
+
+2. La regla de negocio establece que solo las consolas generan garantía básica automática, no los videojuegos. ¿En qué capa del sistema se ubica esta decisión y qué mecanismo de Java se usa para verificar el tipo real de un producto? Justifique.
+
+seria en WarrantyService esto debido a que ella es la que tomara los datos dados por WarrantyRepositoryFile para buscar y comparar, es coherente por el modelo de capaz manejado en este proyecto porque sale es el molde menuUi lo que ve el usuario y services se encarga de las comparaciones y condiciones para que se manden los datos y no debe estar en las otras capas porque no es su funcion sencillamente y no puede depender de nadie la capa de modelo.
+
+3. La duración de cada tipo de garantía es distinta (6 meses o 12 meses). ¿Cómo se calcula la fecha de vencimiento en cada subclase? ¿Debería este cálculo hacerse en el constructor de la garantía o en un método separado? Justifique.
+
+Se calcula en el constructor de la clase abstracta Warranty, no en un método separado ni en cada subclase y al momento de mandar la fecha solo se suma a la fecha de inicio con la funcion getDurationinMonths
+
+4. La garantía extendida agrega un costo del 10% del precio del producto al total de la venta. ¿En qué punto del flujo de registro de venta se calcula y aplica este costo adicional? ¿Qué modificaciones son necesarias en el método SaleService.registerSale?
+
+Se calcula y aplica en SaleService.registerSale, en un punto muy específico: después de crear la venta y aplicar la promoción,como añadidos esta un List<String>extendedWarrantyProductIds como nuevo parámetro de registerSale, con los identificadores de los productos para los que el cliente pidió garantía extendida, recorrer esa lista, ubicar cada Product correspondiente dentro de products , invocar warrantyService.assignExtendedWarranty(producto, sale, LocalDate.now()) por cada uno, y acumular el costo adicional de cada garantía creada.
+
+5. La consulta de "garantías próximas a vencer" requiere iterar sobre todas las garantías y filtrar aquellas cuya fecha de fin esté dentro de los próximos 30 días. ¿En qué clase se ubica este método y qué dependencias necesita? ¿Por qué esta ubicación es coherente con la arquitectura en capas?
+
+WarrantyRepository , que ya recibe por constructor. Con eso le alcanza para pedir warrantyRepository.loadAll() y quedarse con la lista completa de garantías. Todo lo demás lo resuelve con LocalDate.now() y comparaciones de fechas, sin hablar con ninguna otra clase.
