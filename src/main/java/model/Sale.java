@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.time.temporal.ChronoUnit;
 
 /**
  *   Class Sale: Una clase que relaciona a un cliente con una cantidad de productos a comprar y lo registra como una venta en un momento determinado
@@ -106,6 +107,10 @@ public class Sale {
             Total=Total+product.getPrice();
         }
         return Total;
+    }
+        public boolean canBeReturned() {
+        long daysSinceSale = ChronoUnit.DAYS.between(date, LocalDate.now());
+        return daysSinceSale >= 0 && daysSinceSale <= 30;
     }
 /**
  * Metodo Display para mostrar la venta cuando se consulte por codigo
