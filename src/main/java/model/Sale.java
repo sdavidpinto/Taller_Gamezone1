@@ -25,6 +25,7 @@ public class Sale {
     double total;
     private String appliedPromotionName;
     private double discountAmount;
+    private double warrantyCost;
 
     public Sale(String code,Date date, Client client, Seller seller, List<Product> products) {
         this.code=code;
@@ -95,6 +96,8 @@ public class Sale {
     public void setDiscountAmount(double discountAmount) {
         this.discountAmount = discountAmount;
     }
+    
+    
     /**
  * Metodo calculateTotal para determinar el precio de la venta y enviarlo como parametro de el constructor
  */
@@ -116,7 +119,7 @@ public String Display() {
         productosStr.append("  - ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
     }
 
-    double subtotal = total + discountAmount;
+    double subtotal = total + discountAmount - warrantyCost;
 
     StringBuilder resultado = new StringBuilder();
     resultado.append("code: ").append(code).append("\n")
@@ -130,11 +133,23 @@ public String Display() {
         resultado.append("Promotion applied: ").append(appliedPromotionName).append("\n")
                  .append("Discount: -$").append(discountAmount).append("\n");
     }
-
+    
+    if (warrantyCost > 0) {
+        resultado.append("Warranty cost: $").append(warrantyCost).append("\n");
+    }
+    
     resultado.append("Total: $").append(total);
 
     return resultado.toString();
 }
+
+    public double getWarrantyCost() {
+        return warrantyCost;
+    }
+
+    public void setWarrantyCost(double warrantyCost) {
+        this.warrantyCost = warrantyCost;
+    }
 
     
     

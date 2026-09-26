@@ -180,6 +180,7 @@ public class SaleRepositoryFile implements SaleRepository {
     double total = 0;
     String appliedPromotionName = null;
     double discountAmount = 0;
+    double warrantyCost = 0;
     List<Product> productos = new ArrayList<>();
 
     for (String linea : lineas) {
@@ -202,6 +203,8 @@ public class SaleRepositoryFile implements SaleRepository {
         } else if (linea.trim().startsWith("Discount:")) {
             String discStr = linea.substring(linea.indexOf('$') + 1).trim();
             discountAmount = Double.parseDouble(discStr);
+        } else if (linea.trim().startsWith("Warranty cost:")) {
+            warrantyCost = Double.parseDouble(linea.substring(linea.indexOf('$') + 1).trim());
         } else if (linea.trim().startsWith("Total:")) {
             total = Double.parseDouble(linea.substring(linea.indexOf('$') + 1).trim());
         } else {
@@ -224,9 +227,10 @@ public class SaleRepositoryFile implements SaleRepository {
     }
 
     Sale sale = new Sale(code, java.sql.Date.valueOf(date), client, seller, productos);
-    sale.setTotal(total); // se restaura el total tal como estaba guardado en el archivo
-    sale.setAppliedPromotionName(appliedPromotionName); // null si la venta es antigua o no tuvo promo
-    sale.setDiscountAmount(discountAmount); // 0.0 por defecto si la venta es antigua o no tuvo descuento
+    sale.setTotal(total); 
+    sale.setAppliedPromotionName(appliedPromotionName); 
+    sale.setDiscountAmount(discountAmount); 
+    sale.setWarrantyCost(warrantyCost);
     return sale;
 }
 
