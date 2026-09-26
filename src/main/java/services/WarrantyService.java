@@ -44,4 +44,35 @@ public class WarrantyService {
         warranties.add(warranty);
         warrantyRepository.saveAll(warranties);
     }
+    
+        /**
+     * Crea y persiste una garantía básica automática para el producto y
+     * la venta indicados.
+     *
+     * @param product el producto cubierto por la garantía
+     * @param sale la venta en la que se compró el producto
+     * @param startDate la fecha desde la que empieza la cobertura
+     * @return la BasicWarranty recién creada
+     */
+    public BasicWarranty assignBasicWarranty(Product product, Sale sale, LocalDate startDate) {
+        BasicWarranty warranty = new BasicWarranty(generateId(), product, sale, startDate);
+        saveNewWarranty(warranty);
+        return warranty;
+    }
+
+    /**
+     * Crea y persiste una garantía extendida para el producto y la venta
+     * indicados.
+     *
+     * @param product el producto cubierto por la garantía
+     * @param sale la venta en la que se compró el producto
+     * @param startDate la fecha desde la que empieza la cobertura
+     * @return la ExtendedWarranty recién creada
+     */
+    public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) {
+        ExtendedWarranty warranty = new ExtendedWarranty(generateId(), product, sale, startDate);
+        saveNewWarranty(warranty);
+        return warranty;
+    }
+    
 }
