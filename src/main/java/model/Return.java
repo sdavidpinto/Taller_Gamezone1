@@ -54,4 +54,23 @@ public class Return {
         this.refundAmount = amount;
         return amount;
     }
+        public String generateReturnReceipt() {
+        StringBuilder productsStr = new StringBuilder();
+        if (returnedProducts != null) {
+            for (Product product : returnedProducts) {
+                productsStr.append("  - ").append(product.getTitle())
+                        .append(" ($").append(product.getPrice()).append(")\n");
+            }
+        }
+
+        StringBuilder receipt = new StringBuilder();
+        receipt.append("Devolucion: ").append(id).append("\n")
+               .append("Fecha: ").append(date).append("\n")
+               .append("Venta original: ").append(originalSale.getCode()).append("\n")
+               .append("Productos devueltos:\n").append(productsStr)
+               .append("Motivo: ").append(reason).append("\n")
+               .append("Monto reembolsado: $").append(refundAmount);
+
+        return receipt.toString();
+    }
 }
