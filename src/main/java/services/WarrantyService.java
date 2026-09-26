@@ -120,4 +120,25 @@ public class WarrantyService {
         return activeWarranties;
     }
     
+        /**
+     * Retorna las garantías cuya fecha de fin cae dentro de la cantidad de
+     * días indicada desde hoy (inclusive), y que aún no han vencido.
+     *
+     * @param daysAhead la cantidad de días de anticipación a revisar
+     * @return una lista con las garantías que vencen dentro de ese período
+     */
+    public List<Warranty> listWarrantiesExpiringSoon(int daysAhead) {
+        List<Warranty> expiringSoon = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        LocalDate limit = today.plusDays(daysAhead);
+        for (Warranty warranty : warrantyRepository.loadAll()) {
+            LocalDate endDate = warranty.getEndDate();
+            boolean notExpiredYet = !endDate.isBefore(today);
+            boolean withinRange = !endDate.isAfter(limit);
+            if (notExpiredYet && withinRange) {
+                expiringSoon.add(warranty);
+            }
+        }
+        return expiringSoon;
+    }
 }
