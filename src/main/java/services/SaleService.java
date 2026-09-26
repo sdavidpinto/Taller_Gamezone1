@@ -1,11 +1,13 @@
 
 package services;
 
+import java.time.LocalDate;
 import model.Client;
 import model.Product;
 import model.Sale;
 import model.Seller;
 import model.Accessory;
+import model.Console;
 import model.Promotion;
 import persistence.ClientRepository;
 import persistence.ProductRepository;
@@ -97,6 +99,13 @@ public class SaleService {
     }
 
         Sale sale = new Sale(code, new Date(), client, seller, products);
+        
+        for (Product p : products) {
+            if (p instanceof Console) {
+                warrantyService.assignBasicWarranty(p, sale, LocalDate.now());
+            }
+        }
+        
         applyBestPromotion(sale);
         saleRepository.save(sale);
         client.addSale(sale);
