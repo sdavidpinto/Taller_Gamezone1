@@ -120,6 +120,38 @@ public class ReturnRepositoryFile implements ReturnRepository {
 
     @Override
     public void saveAll(List<Return> returns) {
-        // TODO: siguiente commit
+    try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
+        for (Return r : returns) {
+            bw.write(toLine(r));
+            bw.newLine();
+        }
+    } catch (IOException e) {
+        throw new RuntimeException("Error al guardar las devoluciones en: " + filePath, e);
+        }
+     }
+
+    /**
+    * Convierte una devolución en una línea CSV. Los productos devueltos se
+    * almacenan como una lista de identificadores separados por punto y coma
+    * dentro de un único campo CSV.
+    *
+    * @param r la devolución a convertir
+    * @return la línea CSV que representa la devolución
+    */
+    private String toLine(Return r) {
+    StringBuilder productIds = new StringBuilder();
+    for (Product product : r.getProducts()) {
+        if (productIds.length() > 0) {
+            productIds.append(PRODUCT_ID_SEPARATOR);
+        }
+        productIds.append(product.getIdentifier());
+    }
+    return String.join(",",
+            r.getId(),
+            r.getDate().toString(),
+            r.getSale().getCode(),
+            productIds.toString(),
+            r.getReason(),
+            String.valueOf(r.getRefundAmount()));
     }
 }
