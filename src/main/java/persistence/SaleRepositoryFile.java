@@ -173,49 +173,66 @@ public class SaleRepositoryFile implements SaleRepository {
     // --- Parsing de un bloque de líneas a Sale ---
 
     private Sale parseBlock(List<String> lineas) {
-        String code = null;
-        LocalDate date = null;
-        String clientId = null;
-        String sellerId = null;
-        double total = 0;
-        List<Product> productos = new ArrayList<>();
+    String code = null;
+    LocalDate date = null;
+    String clientId = null;
+    String sellerId = null;
+    double total = 0;
+    String appliedPromotionName = null;
+    double discountAmount = 0;
+    double warrantyCost = 0;
+    List<Product> productos = new ArrayList<>();
 
-        for (String linea : lineas) {
-            if (linea.startsWith("code:")) {
-                code = linea.substring("code:".length()).trim();
-            } else if (linea.startsWith("Sale date:")) {
-                date = LocalDate.parse(linea.substring("Sale date:".length()).trim());
-            } else if (linea.startsWith("Client:")) {
-                clientId = linea.substring("Client:".length()).trim();
-            } else if (linea.startsWith("Seller:")) {
-                sellerId = linea.substring("Seller:".length()).trim();
-            } else if (linea.startsWith("Products:")) {
-                // solo marca el inicio de la lista
-            } else if (linea.trim().startsWith("Total:")) {
-                total = Double.parseDouble(linea.substring(linea.indexOf('$') + 1).trim());
-            } else {
-                Matcher m = PRODUCTO_PATTERN.matcher(linea);
-                if (m.matches()) {
-                    String titulo = m.group(1);
-                    double precio = Double.parseDouble(m.group(2));
-                    productos.add(new SimpleProduct(titulo, precio));
-                }
+    for (String linea : lineas) {
+        if (linea.startsWith("code:")) {
+            code = linea.substring("code:".length()).trim();
+        } else if (linea.startsWith("Sale date:")) {
+            date = LocalDate.parse(linea.substring("Sale date:".length()).trim());
+        } else if (linea.startsWith("Client:")) {
+            clientId = linea.substring("Client:".length()).trim();
+        } else if (linea.startsWith("Seller:")) {
+            sellerId = linea.substring("Seller:".length()).trim();
+        } else if (linea.startsWith("Products:")) {
+            // solo marca el inicio de la lista
+        } else if (linea.startsWith("Subtotal:")) {
+            // no se persiste como campo propio; se deriva de total + discountAmount
+            // en Display(), así que aquí solo se reconoce la línea para no
+            // confundirla con un producto. Ventas viejas simplemente no la tienen.
+        } else if (linea.startsWith("Promotion applied:")) {
+            appliedPromotionName = linea.substring("Promotion applied:".length()).trim();
+        } else if (linea.trim().startsWith("Discount:")) {
+            String discStr = linea.substring(linea.indexOf('$') + 1).trim();
+            discountAmount = Double.parseDouble(discStr);
+        } else if (linea.trim().startsWith("Warranty cost:")) {
+            warrantyCost = Double.parseDouble(linea.substring(linea.indexOf('$') + 1).trim());
+        } else if (linea.trim().startsWith("Total:")) {
+            total = Double.parseDouble(linea.substring(linea.indexOf('$') + 1).trim());
+        } else {
+            Matcher m = PRODUCTO_PATTERN.matcher(linea);
+            if (m.matches()) {
+                String titulo = m.group(1);
+                double precio = Double.parseDouble(m.group(2));
+                productos.add(new SimpleProduct(titulo, precio));
             }
         }
-
-        Client client = clientFinder.apply(clientId);
-        Seller seller = sellerFinder.apply(sellerId);
-        if (client == null) {
-            throw new IllegalStateException("No se encontró un Client con idNumber: " + clientId);
-        }
-        if (seller == null) {
-            throw new IllegalStateException("No se encontró un Seller con idNumber: " + sellerId);
-        }
-
-        Sale sale = new Sale(code, java.sql.Date.valueOf(date), client, seller, productos);
-        sale.setTotal(total); // se restaura el total tal como estaba guardado en el archivo
-        return sale;
     }
+
+    Client client = clientFinder.apply(clientId);
+    Seller seller = sellerFinder.apply(sellerId);
+    if (client == null) {
+        throw new IllegalStateException("No se encontró un Client con idNumber: " + clientId);
+    }
+    if (seller == null) {
+        throw new IllegalStateException("No se encontró un Seller con idNumber: " + sellerId);
+    }
+
+    Sale sale = new Sale(code, date, client, seller, productos);
+    sale.setTotal(total); 
+    sale.setAppliedPromotionName(appliedPromotionName); 
+    sale.setDiscountAmount(discountAmount); 
+    sale.setWarrantyCost(warrantyCost);
+    return sale;
+}
 
     /**
      * Versión simplificada de Product usada solo para reconstruir productos

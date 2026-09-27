@@ -1,6 +1,8 @@
 package ui;
 
 import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import model.Client;
 import model.Product;
 import model.Sale;
@@ -10,13 +12,17 @@ import model.Cable;
 import model.Console;
 import model.Controller;
 import model.Memory;
-
+import model.Promotion;
+import model.Warranty;
+import model.Return;
+import services.WarrantyService;
+import services.ReturnService;
 import services.AccessoryService;
 import services.ClientService;
-import service.ProductService;
+import services.ProductService;
 import services.SaleService;
 import services.SellerService;
-
+import services.PromotionService;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -39,14 +45,20 @@ public class MenuUI {
     private final ProductService productService;
     private final SaleService saleService;
     private final AccessoryService accessoryService;
-
+    private final PromotionService promotionService;
+    private final WarrantyService warrantyService;
+    private final ReturnService returnService;
+    
     public MenuUI(ClientService clientService, SellerService sellerService,
-                   ProductService productService, SaleService saleService, AccessoryService accessoryService) {
+                   ProductService productService, SaleService saleService, AccessoryService accessoryService,PromotionService promotionService, WarrantyService warrantyService,ReturnService returnService) {
         this.clientService = clientService;
         this.sellerService = sellerService;
         this.productService = productService;
         this.saleService = saleService;
         this.accessoryService = accessoryService;
+        this.promotionService = promotionService;
+        this.warrantyService = warrantyService;
+        this.returnService=returnService;
     }
 
     /**
@@ -62,6 +74,9 @@ public class MenuUI {
                     + "3. Productos\n"
                     + "4. Ventas\n"
                     + "5. Accesorios\n"
+                    + "6. Promociones\n"
+                    + "7. Garantías\n"
+                    + "8. Devoluciones\n"
                     + "0. Salir";
             String entrada = JOptionPane.showInputDialog(null, menuPrincipal, "Menú principal", JOptionPane.PLAIN_MESSAGE);
 
@@ -77,6 +92,9 @@ public class MenuUI {
                 case 3 -> productsMenu();
                 case 4 -> salesMenu();
                 case 5 -> accessoriesMenu();
+                case 6 -> promotionsMenu();
+                case 7 -> warrantiesMenu();
+                case 8 -> returnsMenu();
                 case 0 -> JOptionPane.showMessageDialog(null, "Hasta luego.");
                 default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
             }
@@ -115,6 +133,25 @@ public class MenuUI {
         }
     }
 
+        /**
+     * Pide una fecha en formato ISO (yyyy-MM-dd) repitiendo la pregunta
+     * mientras el texto no se pueda convertir a LocalDate. Devuelve null
+     * si el usuario cancela.
+     */
+    private LocalDate askDate(String mensaje) {
+        while (true) {
+            String texto = JOptionPane.showInputDialog(mensaje + " (formato: yyyy-MM-dd)");
+            if (texto == null) {
+                return null;
+            }
+            try {
+                return LocalDate.parse(texto.trim());
+            } catch (DateTimeParseException e) {
+                JOptionPane.showMessageDialog(null, "Ingresa una fecha válida (ej. 2026-09-25).", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        }
+    }
+    
      /**
      * Pide la confirmacion para el tipo de control usado en los accessorios.
      */
@@ -573,10 +610,14 @@ public class MenuUI {
             List<String> accessoryIds = accesoriosTexto.isBlank()
                     ? new ArrayList<>()
                     : Arrays.asList(accesoriosTexto.split("\\s*,\\s*"));
-
+            String garantiaExtendidaTexto = JOptionPane.showInputDialog("Identificadores de productos con garantía extendida, separados por coma (opcional, deja vacío si no aplica):");
+            if (garantiaExtendidaTexto == null) return; // el usuario canceló
+            List<String> extendedWarrantyProductIds = garantiaExtendidaTexto.isBlank()
+                    ? new ArrayList<>()
+                    : Arrays.asList(garantiaExtendidaTexto.split("\\s*,\\s*"));
             
             try {
-                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds);
+                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds, extendedWarrantyProductIds);
                 registrado = true;
             } catch (IllegalArgumentException | IllegalStateException e) {
                 JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores de producto e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
@@ -827,5 +868,294 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
+    
+       // ================= PROMOCIONES =================
+
+    private void promotionsMenu() {
+        String menu = "=== Promociones ===\n"
+                + "1. Registrar descuento por porcentaje\n"
+                + "2. Registrar descuento por categoría\n"
+                + "3. Registrar descuento por volumen\n"
+                + "4. Listar todas\n"
+                + "5. Listar vigentes\n"
+                + "6. Buscar por ID\n"
+                + "0. Volver";
+        String entrada = JOptionPane.showInputDialog(null, menu, "Promociones", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) return;
+
+        switch (parseOption(entrada)) {
+            case 1 -> registerPercentageDiscount();
+            case 2 -> registerCategoryDiscount();
+            case 3 -> registerBulkPurchaseDiscount();
+            case 4 -> listAllPromotions();
+            case 5 -> listActivePromotions();
+            case 6 -> searchPromotion();
+            case 0 -> { /* volver */ }
+            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        }
+    }
+
+    private void registerPercentageDiscount() {
+        String name = askRequiredText("Nombre de la promoción:");
+        if (name == null) return;
+        LocalDate startDate = askDate("Fecha de inicio:");
+        if (startDate == null) return;
+        LocalDate endDate = askDate("Fecha de fin:");
+        if (endDate == null) return;
+        Double percentage = askDouble("Porcentaje de descuento (ej. 10 para 10%):");
+        if (percentage == null) return;
+
+        boolean registrado = false;
+        do {
+            String id = askRequiredText("ID de la promoción:");
+            if (id == null) return;
+            try {
+                promotionService.registerPercentageDiscount(id, name, startDate, endDate, percentage);
+                registrado = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro ID.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrado);
+
+        JOptionPane.showMessageDialog(null, "Promoción registrada con éxito.");
+    }
+
+    private void registerCategoryDiscount() {
+        String name = askRequiredText("Nombre de la promoción:");
+        if (name == null) return;
+        LocalDate startDate = askDate("Fecha de inicio:");
+        if (startDate == null) return;
+        LocalDate endDate = askDate("Fecha de fin:");
+        if (endDate == null) return;
+        String targetCategory = askRequiredText("Categoría objetivo (VIDEOGAME / CONSOLE / ACCESSORY):");
+        if (targetCategory == null) return;
+        Double percentage = askDouble("Porcentaje de descuento (ej. 10 para 10%):");
+        if (percentage == null) return;
+
+        boolean registrado = false;
+        do {
+            String id = askRequiredText("ID de la promoción:");
+            if (id == null) return;
+            try {
+                promotionService.registerCategoryDiscount(id, name, startDate, endDate, targetCategory, percentage);
+                registrado = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro ID.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrado);
+
+        JOptionPane.showMessageDialog(null, "Promoción registrada con éxito.");
+    }
+
+    private void registerBulkPurchaseDiscount() {
+        String name = askRequiredText("Nombre de la promoción:");
+        if (name == null) return;
+        LocalDate startDate = askDate("Fecha de inicio:");
+        if (startDate == null) return;
+        LocalDate endDate = askDate("Fecha de fin:");
+        if (endDate == null) return;
+        Integer minQuantity = askInt("Cantidad mínima de artículos:");
+        if (minQuantity == null) return;
+        Double percentage = askDouble("Porcentaje de descuento (ej. 10 para 10%):");
+        if (percentage == null) return;
+
+        boolean registrado = false;
+        do {
+            String id = askRequiredText("ID de la promoción:");
+            if (id == null) return;
+            try {
+                promotionService.registerBulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
+                registrado = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro ID.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrado);
+
+        JOptionPane.showMessageDialog(null, "Promoción registrada con éxito.");
+    }
+
+    private void listAllPromotions() {
+        List<Promotion> promociones = promotionService.listAllPromotions();
+        mostrarListaPromociones(promociones, "No hay promociones registradas.");
+    }
+
+    private void listActivePromotions() {
+        List<Promotion> promociones = promotionService.listActivePromotions();
+        mostrarListaPromociones(promociones, "No hay promociones vigentes.");
+    }
+
+    private void mostrarListaPromociones(List<Promotion> promociones, String mensajeVacio) {
+        if (promociones.isEmpty()) {
+            JOptionPane.showMessageDialog(null, mensajeVacio);
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 70);
+        JScrollPane tabla = new JScrollPane(salida);
+        for (Promotion p : promociones) {
+            salida.append(p.getDescription() + "\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
+    }
+
+    private void searchPromotion() {
+        String id = JOptionPane.showInputDialog("ID de la promoción a buscar:");
+        Promotion p = promotionService.findById(id);
+        JOptionPane.showMessageDialog(null, p != null ? p.getDescription() : "No se encontró la promoción.");
+    }
+    
+    // ================= GARANTIAS =================
+
+    private void warrantiesMenu() {
+        String menu = "=== Garantías ===\n"
+                + "1. Buscar garantía por producto y venta\n"
+                + "2. Listar todas\n"
+                + "3. Listar vigentes\n"
+                + "4. Listar próximas a vencer\n"
+                + "0. Volver";
+        String entrada = JOptionPane.showInputDialog(null, menu, "Garantías", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) return;
+
+        switch (parseOption(entrada)) {
+            case 1 -> searchWarranty();
+            case 2 -> listAllWarranties();
+            case 3 -> listActiveWarranties();
+            case 4 -> listWarrantiesExpiringSoon();
+            case 0 -> { /* volver */ }
+            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        }
+    }
+
+    private void searchWarranty() {
+        String productId = askRequiredText("Identifier del producto:");
+        if (productId == null) return;
+        String saleCode = askRequiredText("Código de la venta:");
+        if (saleCode == null) return;
+
+        Warranty w = warrantyService.findWarrantyByProduct(productId, saleCode);
+        JOptionPane.showMessageDialog(null, w != null ? w.generateWarrantyCertificate() : "No se encontró una garantía para ese producto y venta.");
+    }
+
+    private void listAllWarranties() {
+        displayWarrantyList(warrantyService.listAllWarranties(), "No hay garantías registradas.");
+    }
+
+    private void listActiveWarranties() {
+        displayWarrantyList(warrantyService.listActiveWarranties(), "No hay garantías vigentes.");
+    }
+
+    private void listWarrantiesExpiringSoon() {
+        Integer dias = askInt("¿Con cuántos días de anticipación quieres revisar?");
+        if (dias == null) return;
+
+        displayWarrantyList(warrantyService.listWarrantiesExpiringSoon(dias), "No hay garantías próximas a vencer en ese período.");
+    }
+
+    private void displayWarrantyList(List<Warranty> warranties, String emptyMessage) {
+        if (warranties.isEmpty()) {
+            JOptionPane.showMessageDialog(null, emptyMessage);
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 70);
+        JScrollPane tabla = new JScrollPane(salida);
+        for (Warranty w : warranties) {
+            salida.append(w.generateWarrantyCertificate() + "\n\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
+    }
+    
+    
+    // ================= DEVOLUCIONES =================
+
+    private void returnsMenu() {
+        String menu = "=== Devoluciones ===\n"
+                + "1. Registrar devolución\n"
+                + "2. Listar todas\n"
+                + "3. Buscar por cliente\n"
+                + "4. Buscar por venta\n"
+                + "5. Balance mensual\n"
+                + "0. Volver";
+        String entrada = JOptionPane.showInputDialog(null, menu, "Devoluciones", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) return;
+
+        switch (parseOption(entrada)) {
+            case 1 -> registerReturn();
+            case 2 -> listAllReturns();
+            case 3 -> searchReturnsByCustomer();
+            case 4 -> searchReturnsBySale();
+            case 5 -> monthlyBalance();
+            case 0 -> { /* volver */ }
+            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        }
+    }
+
+    private void registerReturn() {
+        String saleId;
+        do {
+            saleId = askRequiredText("Código de la venta original:");
+            if (saleId == null) return;
+            if (saleService.findByCode(saleId) == null) {
+                JOptionPane.showMessageDialog(null, "No existe una venta con ese código.\nIntenta con otro.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (saleService.findByCode(saleId) == null);
+
+        String reason = askRequiredText("Motivo de la devolución:");
+        if (reason == null) return;
+
+        boolean registrada = false;
+        Return devolucion = null;
+        do {
+            String productosTexto = askRequiredText("Identificadores de productos a devolver, separados por coma (ej: P001,P002):");
+            if (productosTexto == null) return;
+            List<String> productIds = Arrays.asList(productosTexto.split("\\s*,\\s*"));
+
+            try {
+                devolucion = returnService.registerReturn(saleId, productIds, reason);
+                registrada = true;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            }
+        } while (!registrada);
+
+        JOptionPane.showMessageDialog(null, "Devolución registrada:\n" + devolucion.generateReturnReceipt());
+    }
+
+    private void listAllReturns() {
+        displayReturnList(returnService.viewAllReturns(), "No hay devoluciones registradas.");
+    }
+
+    private void searchReturnsByCustomer() {
+        String customerId = askRequiredText("ID del cliente:");
+        if (customerId == null) return;
+        displayReturnList(returnService.viewReturnsByCustomer(customerId), "Ese cliente no tiene devoluciones registradas.");
+    }
+
+    private void searchReturnsBySale() {
+        String saleId = askRequiredText("Código de la venta:");
+        if (saleId == null) return;
+        displayReturnList(returnService.viewReturnsBySale(saleId), "Esa venta no tiene devoluciones registradas.");
+    }
+
+    private void displayReturnList(List<Return> devoluciones, String emptyMessage) {
+        if (devoluciones.isEmpty()) {
+            JOptionPane.showMessageDialog(null, emptyMessage);
+            return;
+        }
+        JTextArea salida = new JTextArea(20, 70);
+        JScrollPane tabla = new JScrollPane(salida);
+        for (Return r : devoluciones) {
+            salida.append(r.generateReturnReceipt() + "\n\n");
+        }
+        JOptionPane.showMessageDialog(null, tabla);
+    }
+    
+    private void monthlyBalance() {
+        Integer month = askInt("Mes a consultar (1-12):");
+        if (month == null) return;
+        Integer year = askInt("Año a consultar (ej. 2026):");
+        if (year == null) return;
+
+        double balance = returnService.generateMonthlyBalance(month, year);
+        JOptionPane.showMessageDialog(null, "Balance neto de " + month + "/" + year + ": $" + balance);
+}
     
 }

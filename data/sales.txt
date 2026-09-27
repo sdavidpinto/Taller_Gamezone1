@@ -6,3 +6,14 @@ Products:
   - PLAY 5 ($500000.0)
 Total: $500000.0
 --------------------------
+code: v2
+Sale date: 2026-09-25
+Client: 1
+Seller: 23
+Products:
+  - PLAY 5 ($500000.0)
+Subtotal: $500000.0
+Promotion applied: promocion random
+Discount: -$250000.0
+Total: $250000.0
+--------------------------

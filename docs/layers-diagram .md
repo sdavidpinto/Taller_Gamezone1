@@ -1,4 +1,12 @@
 ```mermaid
+%% ============================================================
+%% Diagrama de capas - Sistema integrado GameZone Unicesar
+%% Refleja el diseño objetivo del Requerimiento 5 (Integración de
+%% accesorios, promociones, garantías y devoluciones). Ver
+%% class-diagram.md para el detalle de atributos y métodos, y el
+%% propio Requerimiento 5 para la justificación de cada ajuste
+%% (A1-A9).
+%% ============================================================
 classDiagram
     direction TB
 
@@ -18,18 +26,40 @@ classDiagram
         }
         class SaleService {
         }
+        class PromotionService {
+        }
+        class WarrantyService {
+        }
+        class ReturnService {
+            <<Nueva funcionalidad>>
+        }
     }
 
     namespace Persistence_Layer {
         class ProductRepository {
+            <<Interface>>
         }
         class ClientRepository {
+            <<Interface>>
         }
         class SellerRepository {
+            <<Interface>>
         }
         class AccessoryRepository {
+            <<Interface>>
         }
         class SaleRepository {
+            <<Interface>>
+        }
+        class PromotionRepository {
+            <<Interface>>
+        }
+        class WarrantyRepository {
+            <<Interface>>
+        }
+        class ReturnRepository {
+            <<Interface>>
+            <<Nueva funcionalidad>>
         }
     }
 
@@ -59,7 +89,41 @@ classDiagram
         }
         class Sale {
         }
+        class Return {
+            <<Nueva funcionalidad>>
+        }
+        class Promotion {
+            <<abstract>>
+        }
+        class PercentageDiscount {
+        }
+        class CategoryDiscount {
+        }
+        class BulkPurchaseDiscount {
+        }
+        class Warranty {
+            <<abstract>>
+        }
+        class BasicWarranty {
+        }
+        class ExtendedWarranty {
+        }
     }
+
+    %% Nota: todas las clases de la capa de servicios viven en el paquete
+    %% "services" (incluida ProductService); el desajuste de paquete
+    %% "service"/"services" documentado en versiones anteriores ya no
+    %% existe en el código actual.
+    %%
+    %% Ajustes de integración (Requerimiento 5) reflejados en este diagrama:
+    %% A4 - ReturnService ahora usa AccessoryService para restaurar el stock
+    %%      de accesorios devueltos (antes solo restauraba productos vía
+    %%      ProductService).
+    %% A7 - ReturnService ahora usa WarrantyService para anular las garantías
+    %%      de una consola devuelta al momento de registrar la devolución.
+    %% A1, A2, A3, A5, A6 no agregan ni quitan dependencias entre capas:
+    %% son ajustes de validación, resolución interna, orden de cálculo y
+    %% nuevos métodos dentro de clases que ya existían en este diagrama.
 
     %% Dependencies between layers
     MenuUI ..> ProductService : uses
@@ -67,12 +131,17 @@ classDiagram
     MenuUI ..> SellerService : uses
     MenuUI ..> AccessoryService : uses
     MenuUI ..> SaleService : uses
+    MenuUI ..> PromotionService : uses
+    MenuUI ..> WarrantyService : uses
+    MenuUI ..> ReturnService : uses
 
     SaleService ..> ClientRepository : uses
     SaleService ..> SellerRepository : uses
     SaleService ..> ProductRepository : uses
     SaleService ..> AccessoryRepository : uses
     SaleService ..> SaleRepository : uses
+    SaleService ..> PromotionService : uses
+    SaleService ..> WarrantyService : uses
 
     ProductService ..> ProductRepository : uses
     ProductService ..> Product : uses
@@ -85,10 +154,44 @@ classDiagram
 
     AccessoryService ..> AccessoryRepository : uses
     AccessoryService ..> Accessory : uses
+    AccessoryService ..> Product : uses
+
+    PromotionService ..> PromotionRepository : uses
+    PromotionService ..> Promotion : uses
+    PromotionService ..> Sale : uses
+
+    WarrantyService ..> WarrantyRepository : uses
+    WarrantyService ..> SaleRepository : uses
+    WarrantyService ..> ProductService : uses
+    WarrantyService ..> Warranty : uses
+    WarrantyService ..> Product : uses
+    WarrantyService ..> Sale : uses
+
+    ReturnService ..> ReturnRepository : uses
+    ReturnService ..> SaleService : uses
+    ReturnService ..> ProductService : uses
+    ReturnService ..> AccessoryService : uses
+    ReturnService ..> WarrantyService : uses
+    ReturnService ..> Return : uses
+    ReturnService ..> Sale : uses
+    ReturnService ..> Product : uses
 
     SaleRepository ..> Sale : uses
     ProductRepository ..> Product : uses
     ClientRepository ..> Client : uses
     SellerRepository ..> Seller : uses
     AccessoryRepository ..> Accessory : uses
+    PromotionRepository ..> Promotion : uses
+    WarrantyRepository ..> Warranty : uses
+    ReturnRepository ..> Return : uses
+
+    Product <|-- Accessory
+    Accessory <|-- Cable
+    Accessory <|-- Controller
+    Accessory <|-- Memory
+    Promotion <|-- PercentageDiscount
+    Promotion <|-- CategoryDiscount
+    Promotion <|-- BulkPurchaseDiscount
+    Warranty <|-- BasicWarranty
+    Warranty <|-- ExtendedWarranty
 ```

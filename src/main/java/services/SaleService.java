@@ -1,11 +1,14 @@
 
 package services;
 
+import java.time.LocalDate;
 import model.Client;
 import model.Product;
 import model.Sale;
 import model.Seller;
 import model.Accessory;
+import model.Console;
+import model.Promotion;
 import persistence.ClientRepository;
 import persistence.ProductRepository;
 import persistence.SaleRepository;
@@ -15,6 +18,7 @@ import persistence.AccessoryRepository;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import model.ExtendedWarranty;
 
 /**
  * Capa de servicios para Sale. Aquí viven las reglas de negocio
@@ -31,14 +35,18 @@ public class SaleService {
     private final SellerRepository sellerRepository;
     private final ProductRepository productRepository;
     private final AccessoryRepository accessoryRepository;
+    private final PromotionService promotionService;
+    private final WarrantyService warrantyService;
     
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
-                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository) {
+                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService,WarrantyService warrantyService) {
         this.saleRepository = saleRepository;
         this.clientRepository = clientRepository;
         this.sellerRepository = sellerRepository;
         this.productRepository = productRepository;
         this.accessoryRepository=accessoryRepository;
+        this.promotionService=promotionService;
+         this.warrantyService=warrantyService;
     }
 
     /**
@@ -46,7 +54,8 @@ public class SaleService {
      * ya armados). Valida existencia de cliente/vendedor/productos y
      * disponibilidad de stock, y descuenta el stock vendido.
      */
-    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber, List<String> productIdentifiers, List<String> accessoryIdentifiers ) {
+    public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber,List<String> productIdentifiers, List<String> accessoryIdentifiers,List<String> extendedWarrantyProductIds) {
+
         if ((productIdentifiers == null || productIdentifiers.isEmpty())
                 && (accessoryIdentifiers == null || accessoryIdentifiers.isEmpty())) {
             throw new IllegalArgumentException("La venta debe incluir al menos un producto o accesorio");
@@ -55,43 +64,68 @@ public class SaleService {
         if (client == null) {
             throw new IllegalArgumentException("Cliente no encontrado: " + clientIdNumber);
         }
-
         Seller seller = sellerRepository.findByIdNumber(sellerIdNumber);
         if (seller == null) {
             throw new IllegalArgumentException("Vendedor no encontrado: " + sellerIdNumber);
         }
 
+
         List<Product> products = new ArrayList<>();
         if (productIdentifiers != null) {
-    for (String id : productIdentifiers) {
-        Product p = productRepository.findByIdentifier(id);
-            if (p == null) {
-                throw new IllegalArgumentException("Producto no encontrado: " + id);
+            for (String id : productIdentifiers) {
+                Product p = productRepository.findByIdentifier(id);
+                if (p == null) throw new IllegalArgumentException("Producto no encontrado: " + id);
+                if (p.getAvailableQuantity() <= 0) throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
+                products.add(p);
             }
-            if (p.getAvailableQuantity() <= 0) {
-                throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
-            }
-            products.add(p);
-            p.setAvailableQuantity(p.getAvailableQuantity() - 1);
-            productRepository.update(p);
         }
-    }
-    if (accessoryIdentifiers != null) {
-        for (String id : accessoryIdentifiers) {
-            Accessory a = accessoryRepository.findByIdentifier(id);
-            if (a == null) {
-                throw new IllegalArgumentException("Producto no encontrado: " + id);
+        if (accessoryIdentifiers != null) {
+            for (String id : accessoryIdentifiers) {
+                Accessory a = accessoryRepository.findByIdentifier(id);
+                if (a == null) throw new IllegalArgumentException("Producto no encontrado: " + id);
+                if (a.getAvailableQuantity() <= 0) throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
+                products.add(a);
             }
-            if (a.getAvailableQuantity() <= 0) {
-                throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
-            }
-            products.add(a);
-            a.setAvailableQuantity(a.getAvailableQuantity() - 1);
-            accessoryRepository.update(a);
         }
-    }
 
-        Sale sale = new Sale(code, new Date(), client, seller, products);
+        Sale sale = new Sale(code, client, seller, products);
+
+        for (Product p : products) {
+            if (p instanceof Console) {
+                warrantyService.assignBasicWarranty(p, sale, LocalDate.now());
+            }
+        }
+
+        applyBestPromotion(sale);
+
+        double warrantyCost = 0;
+        if (extendedWarrantyProductIds != null) {
+            for (String id : extendedWarrantyProductIds) {
+                Product warrantyProduct = null;
+                for (Product p : products) {
+                    if (p.getIdentifier().equals(id)) { warrantyProduct = p; break; }
+                }
+                if (warrantyProduct == null) {
+                    throw new IllegalArgumentException("Producto no encontrado para garantia extendida: " + id);
+                }
+                ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
+                warrantyCost += extendedWarranty.getAdditionalCost();
+            }
+        }
+
+        sale.setWarrantyCost(warrantyCost);
+        sale.setTotal(sale.getTotal() + warrantyCost);
+
+        // Recién aquí, con la venta completa ya construida sin errores, se toca el inventario
+        for (Product p : products) {
+            p.setAvailableQuantity(p.getAvailableQuantity() - 1);
+            if (p instanceof Accessory) {
+                accessoryRepository.update((Accessory) p);
+            } else {
+                productRepository.update(p);
+            }
+        }
+
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;
@@ -131,5 +165,16 @@ public class SaleService {
     }
 
         return saleRepository.deleteByCode(code);
+    }
+    
+    private void applyBestPromotion(Sale sale) {
+        Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
+        if (bestPromotion == null) {
+            return;
+        }
+        double discount = bestPromotion.calculateDiscount(sale.getProducts());
+        sale.setAppliedPromotionName(bestPromotion.getName());
+        sale.setDiscountAmount(discount);
+        sale.setTotal(sale.getTotal() - discount);
     }
 }
