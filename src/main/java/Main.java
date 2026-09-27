@@ -61,7 +61,7 @@ public class Main {
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleRepository, productService);
         SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository, accessoryRepository, promotionService, warrantyService);
         ReturnRepository returnRepository = new ReturnRepositoryFile(dataFile("returns.csv"), saleService, productService, accesoryService);
-        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accesoryService);
+        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accesoryService, warrantyService);
 
         // --- Capa ui: recibe los services por constructor ---
         MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService, accesoryService, promotionService, warrantyService, returnService);
