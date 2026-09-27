@@ -28,7 +28,7 @@ public class Sale {
     private double discountAmount;
     private double warrantyCost;
 
-    public Sale(String code,Date date, Client client, Seller seller, List<Product> products) {
+    public Sale(String code, Client client, Seller seller, List<Product> products) {
         this.code=code;
         this.date = LocalDate.now();
         this.client = client;
@@ -37,6 +37,14 @@ public class Sale {
         this.total = calculateTotal(products);
     }
 
+    public Sale(String code, LocalDate date, Client client, Seller seller, List<Product> products) {
+        this.code = code;
+        this.date = date != null ? date : LocalDate.now();
+        this.client = client;
+        this.seller = seller;
+        this.products = products;
+        this.total = calculateTotal(products);
+    }
     
     /**
  * Setters y getters por cada atributo mencionado

@@ -88,7 +88,7 @@ public class SaleService {
             }
         }
 
-        Sale sale = new Sale(code, new Date(), client, seller, products);
+        Sale sale = new Sale(code, client, seller, products);
 
         for (Product p : products) {
             if (p instanceof Console) {

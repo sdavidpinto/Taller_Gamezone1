@@ -140,7 +140,7 @@ public class ReturnRepositoryFile implements ReturnRepository {
     */
     private String toLine(Return r) {
     StringBuilder productIds = new StringBuilder();
-    for (Product product : r.getProducts()) {
+    for (Product product : r.getReturnedProducts()) {
         if (productIds.length() > 0) {
             productIds.append(PRODUCT_ID_SEPARATOR);
         }
@@ -149,7 +149,7 @@ public class ReturnRepositoryFile implements ReturnRepository {
     return String.join(",",
             r.getId(),
             r.getDate().toString(),
-            r.getSale().getCode(),
+            r.getOriginalSale().getCode(),
             productIds.toString(),
             r.getReason(),
             String.valueOf(r.getRefundAmount()));

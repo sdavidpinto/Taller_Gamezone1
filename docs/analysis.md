@@ -202,3 +202,24 @@ Se calcula y aplica en SaleService.registerSale, en un punto muy específico: de
 5. La consulta de "garantías próximas a vencer" requiere iterar sobre todas las garantías y filtrar aquellas cuya fecha de fin esté dentro de los próximos 30 días. ¿En qué clase se ubica este método y qué dependencias necesita? ¿Por qué esta ubicación es coherente con la arquitectura en capas?
 
 WarrantyRepository , que ya recibe por constructor. Con eso le alcanza para pedir warrantyRepository.loadAll() y quedarse con la lista completa de garantías. Todo lo demás lo resuelve con LocalDate.now() y comparaciones de fechas, sin hablar con ninguna otra clase.
+
+
+1. La devolución es una nueva entidad del sistema que hace referencia a una venta existente. ¿Qué tipo de relación existe entre la clase Return y la clase Sale? ¿Esta relación es de herencia, asociación, agregación o composición? Justifique.
+
+Esta relación entre la clase Sale y la clase Return es meramente asociativa debido a que en gran parte lo único que hace Return es apuntar a Sale no es una relación de herencia debido a que no es una venta Y mucho menos la venta se borra si el Return es eliminado por ende es mucho menos es composicion.
+
+2. Una devolución puede contener solamente algunos productos de la venta original, no necesariamente todos. ¿Cómo se representa esta situación en los atributos de la clase Return? ¿Qué se almacena en el atributo de productos devueltos?
+
+Return no vuelve a guardar toda la venta, guarda una referencia a la Sale original (originalSale) más una lista aparte, returnedProducts, con solo los productos que el cliente realmente está devolviendo. Entonces en ese atributo no se guarda todo lo que había en la venta sino nada más el subconjunto elegido, y no hace falta marcar nada dentro de Sale para que la devolución parcial funcione.
+
+3. La regla de negocio establece que solo se pueden registrar devoluciones dentro de los 30 días posteriores a la venta. ¿En qué capa del sistema se ubica esta validación y por qué? ¿Qué mecanismo de Java se usa para calcular la diferencia entre dos fechas?
+
+esto queda dividido entre Sale y ReturnService, esto debido a que Sale es la que tiene el atributo date y puede calcular por sí sola si ya pasó el plazo con su propio método canBeReturned, es coherente por el modelo de capaz manejado en este proyecto porque sale es el molde menuUi lo que ve el usuario y services se encarga de las comparaciones y condiciones para que se manden los datos, entonces la decisión de negocio de rechazar la devolución si ya pasó el plazo no la toma Sale sino ReturnService, que llama canBeReturned() antes de registrar y ahí sí lanza la excepción. El mecanismo que se usa para la diferencia de fechas es ChronoUnit.DAYS.between(), de java.time.temporal.ChronoUnit.
+
+4. La devolución de productos incrementa el stock. ¿Qué método existente en el sistema del Taller 1 se reutiliza para esta operación, y en qué clase se invoca desde el módulo de devoluciones? ¿Por qué es importante reutilizar métodos existentes en lugar de duplicar la lógica de actualización de stock?
+
+se reutiliza restoreStock, que ya estaba en ProductService desde el Taller 1, se invoca desde ReturnService cada vez que se registra una devolución, una vez por cada producto devuelto. es importante reutilizarlo y no volver a escribir la lógica de sumar stock dentro de ReturnService porque si no quedaría la misma responsabilidad duplicada en dos partes del sistema, y si un día cambia cómo se actualiza o se guarda el stock tocaría modificar dos lugares en vez de uno solo.
+
+5. El reporte de balance mensual requiere consolidar información de dos módulos distintos (ventas y devoluciones). ¿En qué clase de servicio se ubica este reporte y por qué esta ubicación es coherente con la arquitectura en capas? ¿Qué dependencias necesita esta clase para poder generarlo?
+
+sería en ReturnService esto debido a que ella es la que tomará los datos dados por SaleService y por su propio ReturnRepository para buscar y comparar, es coherente por el modelo de capaz manejado en este proyecto porque sale es el molde menuUi lo que ve el usuario y services se encarga de las comparaciones y condiciones para que se manden los datos y no debe estar en las otras capas porque no es su función sencillamente y no puede depender de nadie la capa de modelo. Las dependencias que necesita son SaleService, para recorrer todas las ventas del mes con findAll(), y su propio returnRepository, para recorrer las devoluciones del mes de la misma forma.

@@ -9,7 +9,6 @@ classDiagram
 
     namespace Service_Layer {
         class ProductService {
-            <<package service>>
         }
         class ClientService {
         }
@@ -22,6 +21,9 @@ classDiagram
         class PromotionService {
         }
         class WarrantyService {
+        }
+        class ReturnService {
+            <<Nueva funcionalidad>>
         }
     }
 
@@ -46,6 +48,10 @@ classDiagram
         }
         class WarrantyRepository {
             <<Interface>>
+        }
+        class ReturnRepository {
+            <<Interface>>
+            <<Nueva funcionalidad>>
         }
     }
 
@@ -75,6 +81,9 @@ classDiagram
         }
         class Sale {
         }
+        class Return {
+            <<Nueva funcionalidad>>
+        }
         class Promotion {
             <<abstract>>
         }
@@ -93,10 +102,10 @@ classDiagram
         }
     }
 
-    %% Nota: todas las clases de servicio viven en el paquete "services",
-    %% excepto ProductService, que en el código actual está en el
-    %% paquete "service" (sin la "s"). Se conserva así porque este
-    %% diagrama documenta el código tal como está implementado.
+    %% Nota: todas las clases de la capa de servicios viven en el paquete
+    %% "services" (incluida ProductService); el desajuste de paquete
+    %% "service"/"services" documentado en versiones anteriores ya no
+    %% existe en el código actual.
 
     %% Dependencies between layers
     MenuUI ..> ProductService : uses
@@ -106,6 +115,7 @@ classDiagram
     MenuUI ..> SaleService : uses
     MenuUI ..> PromotionService : uses
     MenuUI ..> WarrantyService : uses
+    MenuUI ..> ReturnService : uses
 
     SaleService ..> ClientRepository : uses
     SaleService ..> SellerRepository : uses
@@ -133,9 +143,18 @@ classDiagram
     PromotionService ..> Sale : uses
 
     WarrantyService ..> WarrantyRepository : uses
+    WarrantyService ..> SaleRepository : uses
+    WarrantyService ..> ProductService : uses
     WarrantyService ..> Warranty : uses
     WarrantyService ..> Product : uses
     WarrantyService ..> Sale : uses
+
+    ReturnService ..> ReturnRepository : uses
+    ReturnService ..> SaleService : uses
+    ReturnService ..> ProductService : uses
+    ReturnService ..> Return : uses
+    ReturnService ..> Sale : uses
+    ReturnService ..> Product : uses
 
     SaleRepository ..> Sale : uses
     ProductRepository ..> Product : uses
@@ -144,6 +163,7 @@ classDiagram
     AccessoryRepository ..> Accessory : uses
     PromotionRepository ..> Promotion : uses
     WarrantyRepository ..> Warranty : uses
+    ReturnRepository ..> Return : uses
 
     Product <|-- Accessory
     Accessory <|-- Cable

@@ -134,7 +134,7 @@ public List<Return> viewAllReturns() {
 public List<Return> viewReturnsByCustomer(String customerId) {
     List<Return> result = new ArrayList<>();
     for (Return r : returnRepository.loadAll()) {
-        if (r.getSale().getClient().getIdNumber().equals(customerId)) {
+        if (r.getOriginalSale().getClient().getIdNumber().equals(customerId)) {
             result.add(r);
         }
     }
@@ -150,7 +150,7 @@ public List<Return> viewReturnsByCustomer(String customerId) {
 public List<Return> viewReturnsBySale(String saleId) {
     List<Return> result = new ArrayList<>();
     for (Return r : returnRepository.loadAll()) {
-        if (r.getSale().getCode().equals(saleId)) {
+        if (r.getOriginalSale().getCode().equals(saleId)) {
             result.add(r);
         }
     }

@@ -10,7 +10,7 @@ classDiagram
     namespace ui_layer {
         class MenuUI {
             <<UI>>
-            + MenuUI(ClientService, SellerService, ProductService, SaleService, AccessoryService, PromotionService, WarrantyService)
+            + MenuUI(ClientService, SellerService, ProductService, SaleService, AccessoryService, PromotionService, WarrantyService, ReturnService)
             + start() void
             - clientsMenu() void
             - sellersMenu() void
@@ -19,6 +19,7 @@ classDiagram
             - accessoriesMenu() void
             - promotionsMenu() void
             - warrantiesMenu() void
+            - returnsMenu() void
         }
     }
 
@@ -33,7 +34,7 @@ classDiagram
             - applyBestPromotion(Sale sale) void
         }
         class ProductService {
-            <<Desarrollador 1 · paquete "service">>
+            <<Desarrollador 1 · paquete "services">>
             + ProductService(ProductRepository productRepository)
             + registerVideoGame(String identifier, String title, double price, int stock, String platform, String genre, String ageRating) void
             + registerConsole(String identifier, String title, double price, int stock, String brand, String model, String generation) void
@@ -41,6 +42,7 @@ classDiagram
             + findAll() List~Product~
             + updateStock(String identifier, int newStock) boolean
             + deleteProduct(String identifier) boolean
+            + restoreStock(String identifier, int quantity) boolean
         }
         class ClientService {
             <<Desarrollador 2>>
@@ -87,13 +89,24 @@ classDiagram
         }
         class WarrantyService {
             <<Desarrollador 2 / Líder Técnico>>
-            + WarrantyService(WarrantyRepository warrantyRepository)
+            + WarrantyService(WarrantyRepository warrantyRepository, SaleRepository saleRepository, ProductService productService)
             + assignBasicWarranty(Product product, Sale sale, LocalDate startDate) BasicWarranty
             + assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) ExtendedWarranty
             + findWarrantyByProduct(String productId, String saleCode) Warranty
             + listAllWarranties() List~Warranty~
             + listActiveWarranties() List~Warranty~
             + listWarrantiesExpiringSoon(int daysAhead) List~Warranty~
+            - loadAllResolved() List~Warranty~
+        }
+        class ReturnService {
+            <<Nueva funcionalidad>>
+            + ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService)
+            + registerReturn(String saleId, List~String~ productIds, String reason) Return
+            + viewAllReturns() List~Return~
+            + viewReturnsByCustomer(String customerId) List~Return~
+            + viewReturnsBySale(String saleId) List~Return~
+            + generateMonthlyBalance(int month, int year) double
+            - resolveAndValidateProducts(Sale sale, List~String~ productIds) List~Product~
         }
     }
 
@@ -153,7 +166,13 @@ classDiagram
             <<Interface>>
             <<Desarrollador 2>>
             + saveAll(List~Warranty~ warranties) void
-            + loadAll() List~Warranty~
+            + loadAll(Function~String,Product~ productResolver, Function~String,Sale~ saleResolver) List~Warranty~
+        }
+        class ReturnRepository {
+            <<Interface>>
+            <<Nueva funcionalidad>>
+            + saveAll(List~Return~ returns) void
+            + loadAll() List~Return~
         }
     }
 
@@ -222,8 +241,8 @@ classDiagram
             + getDescription()* String
         }
         class Cable {
-            - String connectionType
-            - int length
+            - String ConnectionType
+            - int Length
             + getConnectionType() String
             + getLength() int
             + getDescription() String
@@ -236,8 +255,8 @@ classDiagram
             + addProduct(Product p) void
         }
         class Memory {
-            - String memoryType
-            - int storage
+            - String MemoryType
+            - int Storage
             + getMemoryType() String
             + getStorage() int
             + getDescription() String
@@ -252,8 +271,10 @@ classDiagram
             - double total
             - String appliedPromotionName
             - double discountAmount
+            - double warrantyCost
             + getCode() String
             + calculateTotal(List~Product~ products) double
+            + canBeReturned() boolean
             + getDate() LocalDate
             + getClient() Client
             + getSeller() Seller
@@ -261,7 +282,25 @@ classDiagram
             + getTotal() double
             + getAppliedPromotionName() String
             + getDiscountAmount() double
+            + getWarrantyCost() double
             + Display() String
+        }
+        class Return {
+            <<Nueva funcionalidad>>
+            - String id
+            - LocalDate date
+            - Sale originalSale
+            - List~Product~ returnedProducts
+            - String reason
+            - double refundAmount
+            + getId() String
+            + getDate() LocalDate
+            + getOriginalSale() Sale
+            + getReturnedProducts() List~Product~
+            + getReason() String
+            + getRefundAmount() double
+            + calculateRefundAmount() double
+            + generateReturnReceipt() String
         }
         class Promotion {
             <<Abstract>>
@@ -348,6 +387,7 @@ classDiagram
     MenuUI --> AccessoryService
     MenuUI --> PromotionService
     MenuUI --> WarrantyService
+    MenuUI --> ReturnService
 
     %% Dependencias Service -> Persistence
     SaleService --> SaleRepository
@@ -363,6 +403,11 @@ classDiagram
     AccessoryService --> AccessoryRepository
     PromotionService --> PromotionRepository
     WarrantyService --> WarrantyRepository
+    WarrantyService --> SaleRepository
+    WarrantyService --> ProductService
+    ReturnService --> ReturnRepository
+    ReturnService --> SaleService
+    ReturnService --> ProductService
 
     %% Dependencias de Service hacia Model (relaciones de uso)
     SaleService --> Sale
@@ -373,6 +418,7 @@ classDiagram
     AccessoryService --> Product
     PromotionService --> Promotion
     WarrantyService --> Warranty
+    ReturnService --> Return
 
     %% Dependencias de Persistence hacia Model
     SaleRepository --> Sale
@@ -382,6 +428,7 @@ classDiagram
     AccessoryRepository --> Accessory
     PromotionRepository --> Promotion
     WarrantyRepository --> Warranty
+    ReturnRepository --> Return
 
     %% Relaciones de Herencia (Triángulos)
     Person <|-- Client
@@ -404,4 +451,6 @@ classDiagram
     Sale --> Product
     Warranty --> Product
     Warranty --> Sale
+    Return --> Sale
+    Return --> Product
 ```

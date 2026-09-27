@@ -226,7 +226,7 @@ public class SaleRepositoryFile implements SaleRepository {
         throw new IllegalStateException("No se encontró un Seller con idNumber: " + sellerId);
     }
 
-    Sale sale = new Sale(code, java.sql.Date.valueOf(date), client, seller, productos);
+    Sale sale = new Sale(code, date, client, seller, productos);
     sale.setTotal(total); 
     sale.setAppliedPromotionName(appliedPromotionName); 
     sale.setDiscountAmount(discountAmount); 
