@@ -114,5 +114,47 @@ private List<Product> resolveAndValidateProducts(Sale sale, List<String> product
 private String generateId() {
     return UUID.randomUUID().toString();
 }
+
+/**
+ * Retorna todas las devoluciones registradas.
+ *
+ * @return una lista con todas las devoluciones
+ */
+public List<Return> viewAllReturns() {
+    return returnRepository.loadAll();
+}
+
+/**
+ * Retorna todas las devoluciones cuya venta original pertenece al
+ * cliente indicado.
+ *
+ * @param customerId el número de identificación del cliente
+ * @return una lista con las devoluciones realizadas por ese cliente
+ */
+public List<Return> viewReturnsByCustomer(String customerId) {
+    List<Return> result = new ArrayList<>();
+    for (Return r : returnRepository.loadAll()) {
+        if (r.getSale().getClient().getIdNumber().equals(customerId)) {
+            result.add(r);
+        }
+    }
+    return result;
+}
+
+/**
+ * Retorna todas las devoluciones asociadas a una venta específica.
+ *
+ * @param saleId el código de la venta
+ * @return una lista con las devoluciones realizadas sobre esa venta
+ */
+public List<Return> viewReturnsBySale(String saleId) {
+    List<Return> result = new ArrayList<>();
+    for (Return r : returnRepository.loadAll()) {
+        if (r.getSale().getCode().equals(saleId)) {
+            result.add(r);
+        }
+    }
+    return result;
+}
     
 }
