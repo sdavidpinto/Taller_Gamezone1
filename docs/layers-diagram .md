@@ -1,4 +1,12 @@
 ```mermaid
+%% ============================================================
+%% Diagrama de capas - Sistema integrado GameZone Unicesar
+%% Refleja el diseño objetivo del Requerimiento 5 (Integración de
+%% accesorios, promociones, garantías y devoluciones). Ver
+%% class-diagram.md para el detalle de atributos y métodos, y el
+%% propio Requerimiento 5 para la justificación de cada ajuste
+%% (A1-A9).
+%% ============================================================
 classDiagram
     direction TB
 
@@ -106,6 +114,16 @@ classDiagram
     %% "services" (incluida ProductService); el desajuste de paquete
     %% "service"/"services" documentado en versiones anteriores ya no
     %% existe en el código actual.
+    %%
+    %% Ajustes de integración (Requerimiento 5) reflejados en este diagrama:
+    %% A4 - ReturnService ahora usa AccessoryService para restaurar el stock
+    %%      de accesorios devueltos (antes solo restauraba productos vía
+    %%      ProductService).
+    %% A7 - ReturnService ahora usa WarrantyService para anular las garantías
+    %%      de una consola devuelta al momento de registrar la devolución.
+    %% A1, A2, A3, A5, A6 no agregan ni quitan dependencias entre capas:
+    %% son ajustes de validación, resolución interna, orden de cálculo y
+    %% nuevos métodos dentro de clases que ya existían en este diagrama.
 
     %% Dependencies between layers
     MenuUI ..> ProductService : uses
@@ -152,6 +170,8 @@ classDiagram
     ReturnService ..> ReturnRepository : uses
     ReturnService ..> SaleService : uses
     ReturnService ..> ProductService : uses
+    ReturnService ..> AccessoryService : uses
+    ReturnService ..> WarrantyService : uses
     ReturnService ..> Return : uses
     ReturnService ..> Sale : uses
     ReturnService ..> Product : uses
