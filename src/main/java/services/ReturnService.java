@@ -37,4 +37,82 @@ public class ReturnService {
         this.saleService = saleService;
         this.productService = productService;
     }
+    
+    /**
+ * Registra una nueva devolución luego de validar la existencia de la
+ * venta, el plazo de 30 días para devoluciones, y que los productos
+ * solicitados realmente pertenezcan a la venta original. Si todo es
+ * válido, restaura el stock de los productos devueltos y persiste la
+ * nueva devolución.
+ *
+ * @param saleId el código de la venta original
+ * @param productIds los identificadores de los productos a devolver
+ * @param reason el motivo de la devolución
+ * @return la devolución recién creada
+ * @throws IllegalArgumentException si la venta no existe, si el plazo
+ *         de 30 días ya expiró, o si algún producto no pertenece a la venta
+ */
+public Return registerReturn(String saleId, List<String> productIds, String reason) {
+    Sale sale = saleService.findByCode(saleId);
+    if (sale == null) {
+        throw new IllegalArgumentException("No existe una venta con el código: " + saleId);
+    }
+    if (!sale.canBeReturned()) {
+        throw new IllegalArgumentException("El plazo de 30 días para devolver esta venta ya expiró.");
+    }
+
+    List<Product> productsToReturn = resolveAndValidateProducts(sale, productIds);
+
+    Return newReturn = new Return(generateId(), LocalDate.now(), sale, productsToReturn, reason);
+    newReturn.calculateRefundAmount();
+
+    for (Product product : productsToReturn) {
+        productService.restoreStock(product.getIdentifier(), 1);
+    }
+
+    List<Return> returns = returnRepository.loadAll();
+    returns.add(newReturn);
+    returnRepository.saveAll(returns);
+
+    return newReturn;
+}
+
+/**
+ * Valida que cada identificador de producto solicitado realmente
+ * pertenezca a la venta dada, y retorna los objetos Product
+ * correspondientes.
+ *
+ * @param sale la venta original
+ * @param productIds los identificadores de los productos solicitados para devolución
+ * @return la lista de objetos Product que coinciden con los identificadores solicitados
+ * @throws IllegalArgumentException si algún producto solicitado no pertenece a la venta
+ */
+private List<Product> resolveAndValidateProducts(Sale sale, List<String> productIds) {
+    List<Product> result = new ArrayList<>();
+    for (String productId : productIds) {
+        Product match = null;
+        for (Product product : sale.getProducts()) {
+            if (product.getIdentifier().equals(productId)) {
+                match = product;
+                break;
+            }
+        }
+        if (match == null) {
+            throw new IllegalArgumentException(
+                    "El producto " + productId + " no pertenece a la venta " + sale.getCode());
+        }
+        result.add(match);
+    }
+    return result;
+}
+
+/**
+ * Genera un identificador único para una nueva devolución.
+ *
+ * @return un identificador generado aleatoriamente
+ */
+private String generateId() {
+    return UUID.randomUUID().toString();
+}
+    
 }
