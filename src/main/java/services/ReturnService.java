@@ -43,20 +43,21 @@ public class ReturnService {
     }
     
     /**
- * Registra una nueva devolución luego de validar la existencia de la
- * venta, el plazo de 30 días para devoluciones, y que los productos
- * solicitados realmente pertenezcan a la venta original. Si todo es
- * válido, restaura el stock de los productos devueltos y persiste la
- * nueva devolución.
- *
- * @param saleId el código de la venta original
- * @param productIds los identificadores de los productos a devolver
- * @param reason el motivo de la devolución
- * @return la devolución recién creada
- * @throws IllegalArgumentException si la venta no existe, si el plazo
- *         de 30 días ya expiró, o si algún producto no pertenece a la venta
- */
-public Return registerReturn(String saleId, List<String> productIds, String reason) {
+    * Registra una nueva devolución luego de validar la existencia de la
+    * venta, el plazo de 30 días para devoluciones, y que los productos
+    * solicitados realmente pertenezcan a la venta original. Si todo es
+    * válido, restaura el stock de los productos devueltos y persiste la
+    * nueva devolución.
+    *
+    * @param saleId el código de la venta original
+    * @param productIds los identificadores de los productos a devolver
+    * @param reason el motivo de la devolución
+    * @return la devolución recién creada
+    * @throws IllegalArgumentException si la venta no existe, si el plazo
+    *         de 30 días ya expiró, o si algún producto no pertenece a la venta
+    */
+    
+    public Return registerReturn(String saleId, List<String> productIds, String reason) {
     Sale sale = saleService.findByCode(saleId);
     if (sale == null) {
         throw new IllegalArgumentException("No existe una venta con el código: " + saleId);
@@ -95,6 +96,42 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
         } else {
             productService.restoreStock(item.getIdentifier(), 1);
         }
+    }
+    
+    /**
+     * Calcula el total de ventas de un mes y año dados, usando el total
+     * final de cada venta (que ya refleja descuentos por promociones y
+     * costos adicionales por garantías extendidas), no el precio de lista.
+     *
+     * @param month el mes a evaluar (1-12)
+     * @param year el año a evaluar
+     * @return la suma de los totales finales de las ventas de ese período
+     */
+    public double calculateMonthlySales(int month, int year) {
+        double salesTotal = 0;
+        for (Sale sale : saleService.findAll()) {
+            if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
+                salesTotal += sale.getTotal();
+            }
+        }
+        return salesTotal;
+    }
+    
+    /**
+     * Calcula el total reembolsado por devoluciones de un mes y año dados.
+     *
+     * @param month el mes a evaluar (1-12)
+     * @param year el año a evaluar
+     * @return la suma de los montos reembolsados en las devoluciones de ese período
+     */
+    public double calculateMonthlyReturns(int month, int year) {
+        double returnsTotal = 0;
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
+                returnsTotal += r.getRefundAmount();
+            }
+        }
+        return returnsTotal;
     }
 
 /**
@@ -177,29 +214,18 @@ public List<Return> viewReturnsBySale(String saleId) {
     return result;
 }
 
-/**
- * Calcula el balance neto de un mes y año dados: el total de ventas
- * menos el total de devoluciones en ese período.
- *
- * @param month el mes a evaluar (1-12)
- * @param year el año a evaluar
- * @return el balance neto (total de ventas menos total de devoluciones)
- */
-public double generateMonthlyBalance(int month, int year) {
-    double salesTotal = 0;
-    for (Sale sale : saleService.findAll()) {
-        if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
-            salesTotal += sale.getTotal();
-        }
+    /**
+     * Calcula el balance neto de un mes y año dados: el total de ventas
+     * (usando el total final de cada venta, ya con descuentos y costos
+     * adicionales aplicados) menos el total de devoluciones en ese período.
+     *
+     * @param month el mes a evaluar (1-12)
+     * @param year el año a evaluar
+     * @return el balance neto (total de ventas menos total de devoluciones)
+     */
+    public double generateMonthlyBalance(int month, int year) {
+        double salesTotal = calculateMonthlySales(month, year);
+        double returnsTotal = calculateMonthlyReturns(month, year);
+        return salesTotal - returnsTotal;
     }
-
-    double returnsTotal = 0;
-    for (Return r : returnRepository.loadAll()) {
-        if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
-            returnsTotal += r.getRefundAmount();
-        }
-    }
-
-    return salesTotal - returnsTotal;
-}  
 }
