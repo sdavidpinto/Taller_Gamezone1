@@ -9,13 +9,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import model.Accessory;
 
 /**
- * Capa de servicio para Return. Recibe ReturnRepository, SaleService y
- * ProductService mediante inyección por constructor, y contiene la lógica
- * de negocio para registrar devoluciones (validación de plazo, validación
- * de pertenencia, restauración de stock) y generar el reporte de balance
- * mensual.
+ * Capa de servicios para Return. Ahora también recibe AccessoryService
+ * por inyección de dependencias (constructor), para que el stock se
+ * pueda restaurar correctamente tanto para productos como para
+ * accesorios al procesar una devolución.
  */
 public class ReturnService {
 
@@ -24,18 +24,22 @@ public class ReturnService {
     private final ReturnRepository returnRepository;
     private final SaleService saleService;
     private final ProductService productService;
+    private final AccessoryService accessoryService;
 
     /**
-     * Crea una nueva instancia de ReturnService.
+     * Crea un nuevo ReturnService.
      *
-     * @param returnRepository repositorio usado para persistir y consultar devoluciones
-     * @param saleService servicio usado para resolver y validar ventas
-     * @param productService servicio usado para restaurar el stock de productos
+     * @param returnRepository el repositorio de devoluciones
+     * @param saleService usado para validar y resolver ventas
+     * @param productService usado para resolver y restaurar productos
+     * @param accessoryService usado para resolver y restaurar accesorios
      */
-    public ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService) {
+    public ReturnService(ReturnRepository returnRepository, SaleService saleService,
+                          ProductService productService, AccessoryService accessoryService) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
+        this.accessoryService = accessoryService;
     }
     
     /**
@@ -66,9 +70,9 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
     Return newReturn = new Return(generateId(), LocalDate.now(), sale, productsToReturn, reason);
     newReturn.calculateRefundAmount();
 
-    for (Product product : productsToReturn) {
-        productService.restoreStock(product.getIdentifier(), 1);
-    }
+    for (Product item : productsToReturn) {
+    restoreStockFor(item);
+}
 
     List<Return> returns = returnRepository.loadAll();
     returns.add(newReturn);
@@ -76,6 +80,22 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
 
     return newReturn;
 }
+
+    /**
+     * Restaura el stock de un ítem devuelto. Si el ítem es un Accessory,
+     * delega en AccessoryService; en caso contrario (un Product como
+     * VideoGame o Console), delega en ProductService. Esto evita duplicar
+     * la lógica de restauración de stock por cada tipo de ítem.
+     *
+     * @param item el ítem devuelto cuyo stock debe restaurarse
+     */
+    private void restoreStockFor(Product item) {
+        if (item instanceof Accessory accessory) {
+            accessoryService.restoreStock(accessory.getIdentifier(), 1);
+        } else {
+            productService.restoreStock(item.getIdentifier(), 1);
+        }
+    }
 
 /**
  * Valida que cada identificador de producto solicitado realmente

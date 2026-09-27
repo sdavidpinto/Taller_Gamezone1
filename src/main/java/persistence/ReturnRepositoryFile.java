@@ -3,6 +3,7 @@ package persistence;
 import model.Product;
 import model.Return;
 import model.Sale;
+import services.AccessoryService;
 import services.ProductService;
 import services.SaleService;
 
@@ -13,11 +14,10 @@ import java.util.List;
 
 /**
  * Implementación de ReturnRepository basada en archivos.
- * Almacena y recupera las devoluciones desde un archivo CSV. Como una
- * devolución hace referencia a una Sale y a una lista de Products, esta
- * clase depende de SaleService y ProductService para resolver esas
- * referencias al reconstruir las devoluciones desde el archivo, tal
- * como lo exigen los requisitos del examen.
+ * Guarda y recupera devoluciones desde un archivo CSV. Como una devolución
+ * referencia una venta y una lista de ítems (productos o accesorios), esta
+ * clase depende de SaleService, ProductService y AccessoryService para
+ * resolver esas referencias al reconstruir devoluciones desde el archivo.
  */
 public class ReturnRepositoryFile implements ReturnRepository {
 
@@ -26,24 +26,28 @@ public class ReturnRepositoryFile implements ReturnRepository {
     private final String filePath;
     private final SaleService saleService;
     private final ProductService productService;
+    private final AccessoryService accessoryService;
 
     /**
-     * Crea una nueva instancia de ReturnRepositoryFile.
+     * Crea un nuevo ReturnRepositoryFile.
      *
-     * @param filePath la ruta del archivo CSV usado para la persistencia
-     * @param saleService usado para resolver las referencias a ventas por código
-     * @param productService usado para resolver las referencias a productos por identificador
+     * @param filePath la ruta del archivo CSV usado para persistencia
+     * @param saleService usado para resolver referencias a ventas por código
+     * @param productService usado para resolver referencias a productos por identificador
+     * @param accessoryService usado para resolver referencias a accesorios por identificador
      */
-    public ReturnRepositoryFile(String filePath, SaleService saleService, ProductService productService) {
+    public ReturnRepositoryFile(String filePath, SaleService saleService,
+                                 ProductService productService, AccessoryService accessoryService) {
         this.filePath = filePath;
         this.saleService = saleService;
         this.productService = productService;
+        this.accessoryService = accessoryService;
         createFileIfNotExists();
     }
 
     /**
-     * Garantiza que el archivo de persistencia exista antes de usarlo.
-     * Crea la carpeta padre (por ejemplo, "data/") si aún no existe.
+     * Se asegura de que el archivo de persistencia exista antes de usarlo.
+     * Crea la carpeta contenedora (por ejemplo "data/") si aún no existe.
      */
     private void createFileIfNotExists() {
         File file = new File(filePath);
@@ -60,6 +64,30 @@ public class ReturnRepositoryFile implements ReturnRepository {
         }
     }
 
+    /**
+     * Guarda la lista completa de devoluciones en el archivo CSV,
+     * sobrescribiendo cualquier contenido anterior.
+     *
+     * @param returns la lista de devoluciones a guardar
+     */
+    @Override
+    public void saveAll(List<Return> returns) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
+            for (Return r : returns) {
+                bw.write(toLine(r));
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error guardando devoluciones en: " + filePath, e);
+        }
+    }
+
+    /**
+     * Carga todas las devoluciones desde el archivo CSV.
+     * Retorna una lista vacía si el archivo no existe o está vacío.
+     *
+     * @return la lista de devoluciones cargadas desde el archivo
+     */
     @Override
     public List<Return> loadAll() {
         List<Return> returns = new ArrayList<>();
@@ -78,20 +106,45 @@ public class ReturnRepositoryFile implements ReturnRepository {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error al leer las devoluciones desde: " + filePath, e);
+            throw new RuntimeException("Error leyendo devoluciones de: " + filePath, e);
         }
         return returns;
     }
 
     /**
-     * Reconstruye un objeto Return a partir de una línea CSV, resolviendo la
-     * venta asociada mediante SaleService y cada producto devuelto mediante
-     * ProductService. Si la venta o alguno de los productos no puede
-     * resolverse, la línea se descarta y se retorna null.
+     * Convierte una devolución en una línea CSV. Los productos devueltos
+     * se guardan como una lista de identificadores separados por punto y
+     * coma dentro de un solo campo CSV.
      *
-     * @param line la línea CSV a parsear
-     * @return la devolución reconstruida, o null si la venta o alguno de los
-     *         productos referenciados en la línea no pudo resolverse
+     * @param r la devolución a convertir
+     * @return la línea CSV que representa la devolución
+     */
+    private String toLine(Return r) {
+        StringBuilder productIds = new StringBuilder();
+        for (Product product : r.getReturnedProducts()) {
+            if (productIds.length() > 0) {
+                productIds.append(PRODUCT_ID_SEPARATOR);
+            }
+            productIds.append(product.getIdentifier());
+        }
+        return String.join(",",
+                r.getId(),
+                r.getDate().toString(),
+                r.getOriginalSale().getCode(),
+                productIds.toString(),
+                r.getReason(),
+                String.valueOf(r.getRefundAmount()));
+    }
+
+    /**
+     * Reconstruye un objeto Return a partir de una línea CSV, resolviendo
+     * la venta asociada mediante SaleService y cada ítem devuelto mediante
+     * resolveItem (que revisa productos y accesorios). Si la venta o algún
+     * ítem no pueden resolverse, la línea se omite y se retorna null.
+     *
+     * @param line la línea CSV a interpretar
+     * @return la devolución reconstruida, o null si la venta o algún ítem
+     *         referenciados en la línea no pudieron resolverse
      */
     private Return parseLine(String line) {
         String[] parts = line.split(",", -1);
@@ -106,52 +159,31 @@ public class ReturnRepositoryFile implements ReturnRepository {
             return null;
         }
 
-        List<Product> products = new ArrayList<>();
-        for (String productId : productIdsField.split(PRODUCT_ID_SEPARATOR)) {
-            Product product = productService.findByIdentifier(productId);
-            if (product == null) {
+        List<Product> items = new ArrayList<>();
+        for (String itemId : productIdsField.split(PRODUCT_ID_SEPARATOR)) {
+            Product item = resolveItem(itemId);
+            if (item == null) {
                 return null;
             }
-            products.add(product);
+            items.add(item);
         }
 
-        return new Return(id, date, sale, products, reason);
+        return new Return(id, date, sale, items, reason);
     }
-
-    @Override
-    public void saveAll(List<Return> returns) {
-    try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
-        for (Return r : returns) {
-            bw.write(toLine(r));
-            bw.newLine();
-        }
-    } catch (IOException e) {
-        throw new RuntimeException("Error al guardar las devoluciones en: " + filePath, e);
-        }
-     }
 
     /**
-    * Convierte una devolución en una línea CSV. Los productos devueltos se
-    * almacenan como una lista de identificadores separados por punto y coma
-    * dentro de un único campo CSV.
-    *
-    * @param r la devolución a convertir
-    * @return la línea CSV que representa la devolución
-    */
-    private String toLine(Return r) {
-    StringBuilder productIds = new StringBuilder();
-    for (Product product : r.getReturnedProducts()) {
-        if (productIds.length() > 0) {
-            productIds.append(PRODUCT_ID_SEPARATOR);
+     * Resuelve un identificador de ítem como Product o como Accessory,
+     * revisando primero ProductService y, si no lo encuentra, buscando
+     * en AccessoryService.
+     *
+     * @param itemId el identificador a resolver
+     * @return el Product o Accessory encontrado, o null si no existe en ninguno
+     */
+    private Product resolveItem(String itemId) {
+        Product product = productService.findByIdentifier(itemId);
+        if (product != null) {
+            return product;
         }
-        productIds.append(product.getIdentifier());
-    }
-    return String.join(",",
-            r.getId(),
-            r.getDate().toString(),
-            r.getOriginalSale().getCode(),
-            productIds.toString(),
-            r.getReason(),
-            String.valueOf(r.getRefundAmount()));
+        return accessoryService.findByIdentifier(itemId);
     }
 }
