@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import model.Accessory;
 
 /**
  * Capa de servicios para Return. Ahora también recibe AccessoryService
@@ -69,9 +70,9 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
     Return newReturn = new Return(generateId(), LocalDate.now(), sale, productsToReturn, reason);
     newReturn.calculateRefundAmount();
 
-    for (Product product : productsToReturn) {
-        productService.restoreStock(product.getIdentifier(), 1);
-    }
+    for (Product item : productsToReturn) {
+    restoreStockFor(item);
+}
 
     List<Return> returns = returnRepository.loadAll();
     returns.add(newReturn);
@@ -79,6 +80,22 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
 
     return newReturn;
 }
+
+    /**
+     * Restaura el stock de un ítem devuelto. Si el ítem es un Accessory,
+     * delega en AccessoryService; en caso contrario (un Product como
+     * VideoGame o Console), delega en ProductService. Esto evita duplicar
+     * la lógica de restauración de stock por cada tipo de ítem.
+     *
+     * @param item el ítem devuelto cuyo stock debe restaurarse
+     */
+    private void restoreStockFor(Product item) {
+        if (item instanceof Accessory accessory) {
+            accessoryService.restoreStock(accessory.getIdentifier(), 1);
+        } else {
+            productService.restoreStock(item.getIdentifier(), 1);
+        }
+    }
 
 /**
  * Valida que cada identificador de producto solicitado realmente
