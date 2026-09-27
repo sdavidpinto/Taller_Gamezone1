@@ -110,7 +110,7 @@ public class Return {
      *         venta de referencia, el detalle de los productos devueltos, el
      *         motivo y el monto total reembolsado.
      */
-    public String generateReturnReceipt() {
+       public String generateReturnReceipt() {
         StringBuilder productsStr = new StringBuilder();
         if (returnedProducts != null) {
             double discountRatio = resolveDiscountRatio();
