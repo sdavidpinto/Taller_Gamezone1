@@ -133,7 +133,7 @@ public class ReturnRepositoryFile implements ReturnRepository {
                 r.getOriginalSale().getCode(),
                 productIds.toString(),
                 r.getReason(),
-                String.valueOf(r.getRefundAmount()));
+                String.valueOf(r.getWarrantyRefundAmount()));
     }
 
     /**
@@ -168,6 +168,12 @@ public class ReturnRepositoryFile implements ReturnRepository {
             items.add(item);
         }
 
+        Return r = new Return(id, date, sale, items, reason);
+        String warrantyRefundField = parts.length > 5 ? parts[5] : "0";
+        double warrantyRefund = warrantyRefundField.isBlank() ? 0 : Double.parseDouble(warrantyRefundField);
+        if (warrantyRefund > 0) {
+            r.addWarrantyRefund(warrantyRefund);
+        }
         return new Return(id, date, sale, items, reason);
     }
 

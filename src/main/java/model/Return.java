@@ -81,12 +81,21 @@ public class Return {
     public double calculateRefundAmount() {
         double amount = 0;
         if (returnedProducts != null) {
+            double discountRatio = resolveDiscountRatio();
             for (Product product : returnedProducts) {
-                amount += product.getPrice();
+                amount += product.getPrice() * (1 - discountRatio);;
             }
         }
         this.refundAmount = amount;
         return amount;
+    }
+    
+    private double resolveDiscountRatio() {
+        double subtotal = originalSale.getTotal() + originalSale.getDiscountAmount() - originalSale.getWarrantyCost();
+        if (subtotal <= 0) {
+            return 0;
+        }
+        return originalSale.getDiscountAmount() / subtotal;
     }
 
     /**
@@ -112,9 +121,12 @@ public class Return {
     public String generateReturnReceipt() {
         StringBuilder productsStr = new StringBuilder();
         if (returnedProducts != null) {
+            double discountRatio = resolveDiscountRatio();
             for (Product product : returnedProducts) {
-                productsStr.append("  - ").append(product.getTitle())
-                        .append(" ($").append(product.getPrice()).append(")\n");
+                double listPrice = product.getPrice();
+                double proportionalDiscount = listPrice * discountRatio;
+                double refunded = listPrice - proportionalDiscount;
+               productsStr.append("  - ").append(product.getTitle()).append(" | Precio de lista: $").append(listPrice).append(" | Descuento proporcional: -$").append(proportionalDiscount).append(" | Reembolsado: $").append(refunded).append("\n");
             }
         }
 
