@@ -86,6 +86,38 @@ public class WarrantyService {
     }
 
     /**
+     * Cancela la garantía asociada a un producto específico dentro de una
+     * venta específica, como consecuencia de que el producto fue devuelto.
+     * Retorna el monto que debe reembolsarse adicionalmente al cliente por
+     * la garantía cancelada: 0 para una garantía básica (sin costo), o el
+     * costo adicional pagado para una garantía extendida.
+     *
+     * @param productId el identificador del producto cuya garantía se cancela
+     * @param saleCode el código de la venta a la que pertenece la garantía
+     * @return el monto reembolsable de la garantía cancelada, o 0 si no
+     *         existía ninguna garantía para ese producto en esa venta
+     */
+    public double cancelWarranties(String productId, String saleCode) {
+        List<Warranty> warranties = loadAllResolved();
+        Warranty toCancel = null;
+        for (Warranty warranty : warranties) {
+            boolean sameProduct = warranty.getProduct().getIdentifier().equals(productId);
+            boolean sameSale = warranty.getSale().getCode().equals(saleCode);
+            if (sameProduct && sameSale) {
+                toCancel = warranty;
+                break;
+            }
+        }
+        if (toCancel == null) {
+            return 0;
+        }
+        double refundableAmount = toCancel.getAdditionalCost();
+        warranties.remove(toCancel);
+        warrantyRepository.saveAll(warranties);
+        return refundableAmount;
+    }
+    
+    /**
      * Crea y persiste una garantía extendida para el producto y la venta
      * indicados.
      *

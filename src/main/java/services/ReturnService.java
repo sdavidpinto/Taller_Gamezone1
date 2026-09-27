@@ -1,5 +1,7 @@
 package services;
 
+import model.Accessory;
+import model.Console;
 import model.Product;
 import model.Return;
 import model.Sale;
@@ -9,13 +11,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import model.Accessory;
 
 /**
- * Capa de servicios para Return. Ahora también recibe AccessoryService
- * por inyección de dependencias (constructor), para que el stock se
- * pueda restaurar correctamente tanto para productos como para
- * accesorios al procesar una devolución.
+ * Capa de servicios para Return. Recibe ReturnRepository, SaleService,
+ * ProductService, AccessoryService y WarrantyService por inyección de
+ * dependencias (constructor). Además de registrar devoluciones y restaurar
+ * stock, cancela la garantía asociada cuando el producto devuelto es una
+ * consola, e incorpora ese reembolso adicional a la devolución.
  */
 public class ReturnService {
 
@@ -25,6 +27,7 @@ public class ReturnService {
     private final SaleService saleService;
     private final ProductService productService;
     private final AccessoryService accessoryService;
+    private final WarrantyService warrantyService;
 
     /**
      * Crea un nuevo ReturnService.
@@ -33,54 +36,60 @@ public class ReturnService {
      * @param saleService usado para validar y resolver ventas
      * @param productService usado para resolver y restaurar productos
      * @param accessoryService usado para resolver y restaurar accesorios
+     * @param warrantyService usado para cancelar garantías de consolas devueltas
      */
     public ReturnService(ReturnRepository returnRepository, SaleService saleService,
-                          ProductService productService, AccessoryService accessoryService) {
+                          ProductService productService, AccessoryService accessoryService,
+                          WarrantyService warrantyService) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
         this.accessoryService = accessoryService;
+        this.warrantyService = warrantyService;
     }
-    
+
     /**
-    * Registra una nueva devolución luego de validar la existencia de la
-    * venta, el plazo de 30 días para devoluciones, y que los productos
-    * solicitados realmente pertenezcan a la venta original. Si todo es
-    * válido, restaura el stock de los productos devueltos y persiste la
-    * nueva devolución.
-    *
-    * @param saleId el código de la venta original
-    * @param productIds los identificadores de los productos a devolver
-    * @param reason el motivo de la devolución
-    * @return la devolución recién creada
-    * @throws IllegalArgumentException si la venta no existe, si el plazo
-    *         de 30 días ya expiró, o si algún producto no pertenece a la venta
-    */
-    
+     * Registra una nueva devolución luego de validar la existencia de la
+     * venta, el plazo de 30 días para devoluciones, y que los productos
+     * solicitados realmente pertenezcan a la venta original. Si todo es
+     * válido, restaura el stock de los productos devueltos, cancela la
+     * garantía de cada consola devuelta, y persiste la nueva devolución.
+     *
+     * @param saleId el código de la venta original
+     * @param productIds los identificadores de los productos a devolver
+     * @param reason el motivo de la devolución
+     * @return la devolución recién creada
+     * @throws IllegalArgumentException si la venta no existe, si el plazo
+     *         de 30 días ya expiró, o si algún producto no pertenece a la venta
+     */
     public Return registerReturn(String saleId, List<String> productIds, String reason) {
-    Sale sale = saleService.findByCode(saleId);
-    if (sale == null) {
-        throw new IllegalArgumentException("No existe una venta con el código: " + saleId);
+        Sale sale = saleService.findByCode(saleId);
+        if (sale == null) {
+            throw new IllegalArgumentException("No existe una venta con el código: " + saleId);
+        }
+        if (!sale.canBeReturned()) {
+            throw new IllegalArgumentException("El plazo de 30 días para devolver esta venta ya expiró.");
+        }
+
+        List<Product> productsToReturn = resolveAndValidateProducts(sale, productIds);
+
+        Return newReturn = new Return(generateId(), LocalDate.now(), sale, productsToReturn, reason);
+
+        double warrantyRefund = 0;
+        for (Product item : productsToReturn) {
+            restoreStockFor(item);
+            if (item instanceof Console) {
+                warrantyRefund += warrantyService.cancelWarranties(item.getIdentifier(), sale.getCode());
+            }
+        }
+        newReturn.addWarrantyRefund(warrantyRefund);
+
+        List<Return> returns = returnRepository.loadAll();
+        returns.add(newReturn);
+        returnRepository.saveAll(returns);
+
+        return newReturn;
     }
-    if (!sale.canBeReturned()) {
-        throw new IllegalArgumentException("El plazo de 30 días para devolver esta venta ya expiró.");
-    }
-
-    List<Product> productsToReturn = resolveAndValidateProducts(sale, productIds);
-
-    Return newReturn = new Return(generateId(), LocalDate.now(), sale, productsToReturn, reason);
-    newReturn.calculateRefundAmount();
-
-    for (Product item : productsToReturn) {
-    restoreStockFor(item);
-}
-
-    List<Return> returns = returnRepository.loadAll();
-    returns.add(newReturn);
-    returnRepository.saveAll(returns);
-
-    return newReturn;
-}
 
     /**
      * Restaura el stock de un ítem devuelto. Si el ítem es un Accessory,
@@ -97,7 +106,87 @@ public class ReturnService {
             productService.restoreStock(item.getIdentifier(), 1);
         }
     }
-    
+
+    /**
+     * Valida que cada identificador de producto solicitado realmente
+     * pertenezca a la venta dada, y retorna los objetos Product
+     * correspondientes.
+     *
+     * @param sale la venta original
+     * @param productIds los identificadores de los productos solicitados para devolución
+     * @return la lista de objetos Product que coinciden con los identificadores solicitados
+     * @throws IllegalArgumentException si algún producto solicitado no pertenece a la venta
+     */
+    private List<Product> resolveAndValidateProducts(Sale sale, List<String> productIds) {
+        List<Product> result = new ArrayList<>();
+        for (String productId : productIds) {
+            Product match = null;
+            for (Product product : sale.getProducts()) {
+                if (product.getIdentifier().equals(productId)) {
+                    match = product;
+                    break;
+                }
+            }
+            if (match == null) {
+                throw new IllegalArgumentException(
+                        "El producto " + productId + " no pertenece a la venta " + sale.getCode());
+            }
+            result.add(match);
+        }
+        return result;
+    }
+
+    /**
+     * Genera un identificador único para una nueva devolución.
+     *
+     * @return un identificador generado aleatoriamente
+     */
+    private String generateId() {
+        return UUID.randomUUID().toString();
+    }
+
+    /**
+     * Retorna todas las devoluciones registradas.
+     *
+     * @return una lista con todas las devoluciones
+     */
+    public List<Return> viewAllReturns() {
+        return returnRepository.loadAll();
+    }
+
+    /**
+     * Retorna todas las devoluciones cuya venta original pertenece al
+     * cliente indicado.
+     *
+     * @param customerId el número de identificación del cliente
+     * @return una lista con las devoluciones realizadas por ese cliente
+     */
+    public List<Return> viewReturnsByCustomer(String customerId) {
+        List<Return> result = new ArrayList<>();
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getOriginalSale().getClient().getIdNumber().equals(customerId)) {
+                result.add(r);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Retorna todas las devoluciones asociadas a una venta específica.
+     *
+     * @param saleId el código de la venta
+     * @return una lista con las devoluciones realizadas sobre esa venta
+     */
+    public List<Return> viewReturnsBySale(String saleId) {
+        List<Return> result = new ArrayList<>();
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getOriginalSale().getCode().equals(saleId)) {
+                result.add(r);
+            }
+        }
+        return result;
+    }
+
     /**
      * Calcula el total de ventas de un mes y año dados, usando el total
      * final de cada venta (que ya refleja descuentos por promociones y
@@ -116,7 +205,7 @@ public class ReturnService {
         }
         return salesTotal;
     }
-    
+
     /**
      * Calcula el total reembolsado por devoluciones de un mes y año dados.
      *
@@ -133,86 +222,6 @@ public class ReturnService {
         }
         return returnsTotal;
     }
-
-/**
- * Valida que cada identificador de producto solicitado realmente
- * pertenezca a la venta dada, y retorna los objetos Product
- * correspondientes.
- *
- * @param sale la venta original
- * @param productIds los identificadores de los productos solicitados para devolución
- * @return la lista de objetos Product que coinciden con los identificadores solicitados
- * @throws IllegalArgumentException si algún producto solicitado no pertenece a la venta
- */
-private List<Product> resolveAndValidateProducts(Sale sale, List<String> productIds) {
-    List<Product> result = new ArrayList<>();
-    for (String productId : productIds) {
-        Product match = null;
-        for (Product product : sale.getProducts()) {
-            if (product.getIdentifier().equals(productId)) {
-                match = product;
-                break;
-            }
-        }
-        if (match == null) {
-            throw new IllegalArgumentException(
-                    "El producto " + productId + " no pertenece a la venta " + sale.getCode());
-        }
-        result.add(match);
-    }
-    return result;
-}
-
-/**
- * Genera un identificador único para una nueva devolución.
- *
- * @return un identificador generado aleatoriamente
- */
-private String generateId() {
-    return UUID.randomUUID().toString();
-}
-
-/**
- * Retorna todas las devoluciones registradas.
- *
- * @return una lista con todas las devoluciones
- */
-public List<Return> viewAllReturns() {
-    return returnRepository.loadAll();
-}
-
-/**
- * Retorna todas las devoluciones cuya venta original pertenece al
- * cliente indicado.
- *
- * @param customerId el número de identificación del cliente
- * @return una lista con las devoluciones realizadas por ese cliente
- */
-public List<Return> viewReturnsByCustomer(String customerId) {
-    List<Return> result = new ArrayList<>();
-    for (Return r : returnRepository.loadAll()) {
-        if (r.getOriginalSale().getClient().getIdNumber().equals(customerId)) {
-            result.add(r);
-        }
-    }
-    return result;
-}
-
-/**
- * Retorna todas las devoluciones asociadas a una venta específica.
- *
- * @param saleId el código de la venta
- * @return una lista con las devoluciones realizadas sobre esa venta
- */
-public List<Return> viewReturnsBySale(String saleId) {
-    List<Return> result = new ArrayList<>();
-    for (Return r : returnRepository.loadAll()) {
-        if (r.getOriginalSale().getCode().equals(saleId)) {
-            result.add(r);
-        }
-    }
-    return result;
-}
 
     /**
      * Calcula el balance neto de un mes y año dados: el total de ventas
