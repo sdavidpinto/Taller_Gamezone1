@@ -70,4 +70,12 @@ classDiagram
     %% devoluciones, pero no participa de ninguna jerarquía de herencia:
     %% es una clase concreta e independiente que solo se asocia con
     %% Sale y Product (ver class-diagram.md y layers-diagram.md).
+    %%
+    %% Nota (Requerimiento 5, ajuste A1): CategoryDiscount ahora también
+    %% acepta "ACCESSORY" como categoría objetivo, además de "VIDEOGAME" y
+    %% "CONSOLE". Esto no crea ninguna clase ni relación de herencia nueva:
+    %% Accessory ya es subclase de Product, así que basta con que
+    %% CategoryDiscount reconozca las instancias de Accessory (y por lo
+    %% tanto también de Cable, Controller y Memory) al calcular el
+    %% descuento.
 ```

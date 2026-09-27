@@ -2,9 +2,11 @@
 
 Sistema de información para la gestión de una tienda de videojuegos y consolas ubicada en el sector universitario de Valledupar. Permite registrar y consultar productos, accesorios, clientes, vendedores, promociones, garantías, ventas y devoluciones, con persistencia de datos en archivos.
 
+Las cuatro ampliaciones (accesorios, promociones, garantías y devoluciones) operan de forma integrada sobre una misma venta: una venta puede incluir videojuegos, consolas y accesorios; recibe automáticamente la mejor promoción vigente; genera garantías básicas y extendidas; y puede ser objeto de una devolución parcial que se refleja en el inventario, en las garantías y en el balance mensual. Ver [Integración del sistema](#integración-del-sistema) para el detalle de los ajustes que hacen posible esta integración.
+
 ## Equipo
 
-Ver [`docs/Team.md`](./docs/Team.md) para roles y distribución de trabajo.
+Ver [`docs/Team.md`](./Team.md) para roles y distribución de trabajo.
 
 ## Arquitectura
 
@@ -83,7 +85,7 @@ Taller_Gamezone1/
 
 Dependencias: `ui → services → persistence → model`
 
-Diagramas de diseño en [`docs/`](./docs/).
+Diagramas de diseño en esta misma carpeta [`docs/`](./).
 
 ## Requisitos
 
@@ -97,17 +99,21 @@ Diagramas de diseño en [`docs/`](./docs/).
 ## Funcionalidades
 
 - Registrar/listar videojuegos, consolas, accesorios (controles, cables, memorias), clientes y vendedores.
-- Registrar promociones (porcentaje, categoría, volumen de compra) y consultar cuáles están vigentes.
-- Registrar ventas —incluyendo accesorios y garantía extendida opcional— y consultar historial (general, por cliente, por vendedor).
+- Registrar promociones (porcentaje, categoría —incluida la categoría de accesorios— y volumen de compra) y consultar cuáles están vigentes.
+- Registrar ventas —incluyendo productos y accesorios en una misma venta, con garantía extendida opcional por consola— y consultar historial (general, por cliente, por vendedor). El total de la venta se calcula como *subtotal − descuento de la mejor promoción vigente + costo de las garantías extendidas*, y el recibo desglosa cada uno de esos valores.
 - Asignar garantía básica automática a consolas vendidas; consultar garantías (todas, vigentes, próximas a vencer).
-- Registrar devoluciones dentro del plazo de 30 días, validando que los productos pertenezcan a la venta original y restaurando el stock automáticamente.
-- Consultar devoluciones (todas, por cliente o por venta) y generar el balance mensual neto (ventas menos devoluciones).
+- Registrar devoluciones parciales dentro del plazo de 30 días, validando que los productos (o accesorios) pertenezcan a la venta original, restaurando el stock del ítem según su tipo y anulando la garantía si el producto devuelto es una consola con garantía vigente.
+- El monto reembolsado de una devolución es proporcional al descuento que tuvo la venta original (no el precio de lista) y, si aplica, incluye el costo de la garantía extendida cancelada.
+- Consultar devoluciones (todas, por cliente o por venta) y generar el balance mensual: total de ventas, total de devoluciones y balance neto.
 - Carga y guardado automático de datos en cada ejecución.
+
+
+Ver [`docs/class-diagram.md`](./class-diagram.md) y [`docs/layers-diagram.md`](./layers-diagram.md) para el detalle de clases, métodos y dependencias que introduce cada ajuste.
 
 ## Documentación adicional
 
-- [`docs/analysis.md`](./docs/analysis.md)
-- [`docs/hierarchy-diagram.md`](./docs/hierarchy-diagram.md)
-- [`docs/class-diagram.md`](./docs/class-diagram.md)
-- [`docs/layers-diagram.md`](./docs/layers-diagram.md)
-- [`docs/ai-usage/`](./docs/ai-usage/)
+- [`docs/analysis.md`](./analysis.md)
+- [`docs/hierarchy-diagram.md`](./hierarchy-diagram.md)
+- [`docs/class-diagram.md`](./class-diagram.md)
+- [`docs/layers-diagram.md`](./layers-diagram.md)
+- [`docs/ai-usage/`](./ai-usage/)

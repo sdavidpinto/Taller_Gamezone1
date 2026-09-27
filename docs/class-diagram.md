@@ -1,4 +1,17 @@
 ```mermaid
+%% ============================================================
+%% Diagrama de clases - Sistema integrado GameZone Unicesar
+%% Refleja el diseño objetivo del Requerimiento 5 (Integración):
+%%   A1 - CategoryDiscount admite "ACCESSORY"            [ya en código]
+%%   A2 - WarrantyService sin dependencia circular        [ya en código]
+%%   A3 - Flujo unificado de SaleService.registerSale     [reorganización interna, sin cambio de firma]
+%%   A4 - ReturnService delega restauración de stock de accesorios en AccessoryService
+%%   A5 - Return.calculateRefundAmount es proporcional al descuento de la venta original
+%%   A6 - ReturnService expone ventas y devoluciones del mes por separado
+%%   A7 - WarrantyService.cancelWarranties anula garantías al devolver una consola
+%% Nota: el documento de Requerimiento 5 usa el nombre genérico "ConsoleMenu"
+%% para referirse a la clase MenuUI de este proyecto.
+%% ============================================================
 classDiagram
     direction TB
 
@@ -75,6 +88,7 @@ classDiagram
             + findCompatibleWithConsoleBrand(String brand) List~Accessory~
             + findAccessoriesCompatibleWith(String productId) List~Accessory~
             + addCompatibleProduct(String accessoryIdentifier, Product product) void
+            + restoreStock(String accessoryId, int quantity) boolean
         }
         class PromotionService {
             <<Desarrollador 2 / Líder Técnico>>
@@ -96,16 +110,19 @@ classDiagram
             + listAllWarranties() List~Warranty~
             + listActiveWarranties() List~Warranty~
             + listWarrantiesExpiringSoon(int daysAhead) List~Warranty~
+            + cancelWarranties(String productId, String saleId) double
             - loadAllResolved() List~Warranty~
         }
         class ReturnService {
             <<Nueva funcionalidad>>
-            + ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService)
+            + ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService, AccessoryService accessoryService, WarrantyService warrantyService)
             + registerReturn(String saleId, List~String~ productIds, String reason) Return
             + viewAllReturns() List~Return~
             + viewReturnsByCustomer(String customerId) List~Return~
             + viewReturnsBySale(String saleId) List~Return~
             + generateMonthlyBalance(int month, int year) double
+            + calculateMonthlySales(int month, int year) double
+            + calculateMonthlyReturns(int month, int year) double
             - resolveAndValidateProducts(Sale sale, List~String~ productIds) List~Product~
         }
     }
@@ -176,6 +193,11 @@ classDiagram
         }
     }
 
+    %% A5: Return.calculateRefundAmount deja de sumar precios de lista y pasa
+    %% a ser proporcional al descuento de la venta original:
+    %% precio x (1 - discountAmount / subtotal).
+    %% A7: el monto reembolsado incorpora el costo de las garantías canceladas,
+    %% devuelto por WarrantyService.cancelWarranties(productId, saleId).
     namespace model_layer {
         class Person {
             <<Abstract>>
@@ -408,6 +430,8 @@ classDiagram
     ReturnService --> ReturnRepository
     ReturnService --> SaleService
     ReturnService --> ProductService
+    ReturnService --> AccessoryService
+    ReturnService --> WarrantyService
 
     %% Dependencias de Service hacia Model (relaciones de uso)
     SaleService --> Sale
