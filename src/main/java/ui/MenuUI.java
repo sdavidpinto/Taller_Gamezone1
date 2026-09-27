@@ -1072,6 +1072,7 @@ public class MenuUI {
                 + "2. Listar todas\n"
                 + "3. Buscar por cliente\n"
                 + "4. Buscar por venta\n"
+                + "5. Balance mensual\n"
                 + "0. Volver";
         String entrada = JOptionPane.showInputDialog(null, menu, "Devoluciones", JOptionPane.PLAIN_MESSAGE);
         if (entrada == null) return;
@@ -1081,6 +1082,7 @@ public class MenuUI {
             case 2 -> listAllReturns();
             case 3 -> searchReturnsByCustomer();
             case 4 -> searchReturnsBySale();
+            case 5 -> monthlyBalance();
             case 0 -> { /* volver */ }
             default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
         }
@@ -1145,5 +1147,15 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
+    
+    private void monthlyBalance() {
+        Integer month = askInt("Mes a consultar (1-12):");
+        if (month == null) return;
+        Integer year = askInt("Año a consultar (ej. 2026):");
+        if (year == null) return;
+
+        double balance = returnService.generateMonthlyBalance(month, year);
+        JOptionPane.showMessageDialog(null, "Balance neto de " + month + "/" + year + ": $" + balance);
+}
     
 }
