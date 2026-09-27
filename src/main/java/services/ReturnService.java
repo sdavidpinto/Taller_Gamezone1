@@ -214,29 +214,18 @@ public List<Return> viewReturnsBySale(String saleId) {
     return result;
 }
 
-/**
- * Calcula el balance neto de un mes y año dados: el total de ventas
- * menos el total de devoluciones en ese período.
- *
- * @param month el mes a evaluar (1-12)
- * @param year el año a evaluar
- * @return el balance neto (total de ventas menos total de devoluciones)
- */
-public double generateMonthlyBalance(int month, int year) {
-    double salesTotal = 0;
-    for (Sale sale : saleService.findAll()) {
-        if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
-            salesTotal += sale.getTotal();
-        }
+    /**
+     * Calcula el balance neto de un mes y año dados: el total de ventas
+     * (usando el total final de cada venta, ya con descuentos y costos
+     * adicionales aplicados) menos el total de devoluciones en ese período.
+     *
+     * @param month el mes a evaluar (1-12)
+     * @param year el año a evaluar
+     * @return el balance neto (total de ventas menos total de devoluciones)
+     */
+    public double generateMonthlyBalance(int month, int year) {
+        double salesTotal = calculateMonthlySales(month, year);
+        double returnsTotal = calculateMonthlyReturns(month, year);
+        return salesTotal - returnsTotal;
     }
-
-    double returnsTotal = 0;
-    for (Return r : returnRepository.loadAll()) {
-        if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
-            returnsTotal += r.getRefundAmount();
-        }
-    }
-
-    return salesTotal - returnsTotal;
-}  
 }
