@@ -96,6 +96,29 @@ public class AccessoryService {
         return accessoryRepository.update(existingAccessory);
     }
 
+        /**
+     * Incrementa la cantidad disponible en inventario de un accesorio en
+     * la cantidad indicada. Se usa cuando un accesorio devuelto vuelve
+     * a estar disponible en el inventario.
+     *
+     * @param identifier el identificador del accesorio a restaurar
+     * @param quantity la cantidad a sumar a la cantidad disponible
+     * @return true si el accesorio se encontró y actualizó, false en caso contrario
+     * @throws IllegalArgumentException si la cantidad es negativa o cero
+     */
+    public boolean restoreStock(String identifier, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("La cantidad a restaurar debe ser mayor que cero.");
+        }
+        Accessory existingAccessory = accessoryRepository.findByIdentifier(identifier);
+        if (existingAccessory == null) {
+            return false;
+        }
+        int newQuantity = existingAccessory.getAvailableQuantity() + quantity;
+        existingAccessory.setAvailableQuantity(newQuantity);
+        return accessoryRepository.update(existingAccessory);
+    }
+    
     /**
      * Verifica si hay suficiente inventario disponible para vender la
      * cantidad solicitada.
