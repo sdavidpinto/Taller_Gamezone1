@@ -84,11 +84,14 @@ public class ReturnRepositoryFile implements ReturnRepository {
     }
 
     /**
-     * Reconstruye un objeto Return a partir de una línea CSV.
-     * (La resolución de Sale y Product se agrega en el siguiente commit).
+     * Reconstruye un objeto Return a partir de una línea CSV, resolviendo la
+     * venta asociada mediante SaleService y cada producto devuelto mediante
+     * ProductService. Si la venta o alguno de los productos no puede
+     * resolverse, la línea se descarta y se retorna null.
      *
      * @param line la línea CSV a parsear
-     * @return la devolución reconstruida, o null si aún no se implementa la resolución
+     * @return la devolución reconstruida, o null si la venta o alguno de los
+     *         productos referenciados en la línea no pudo resolverse
      */
     private Return parseLine(String line) {
         String[] parts = line.split(",", -1);
@@ -98,8 +101,21 @@ public class ReturnRepositoryFile implements ReturnRepository {
         String productIdsField = parts[3];
         String reason = parts[4];
 
-        // TODO: resolver sale y products (siguiente commit)
-        return null;
+        Sale sale = saleService.findByCode(saleCode);
+        if (sale == null) {
+            return null;
+        }
+
+        List<Product> products = new ArrayList<>();
+        for (String productId : productIdsField.split(PRODUCT_ID_SEPARATOR)) {
+            Product product = productService.findByIdentifier(productId);
+            if (product == null) {
+                return null;
+            }
+            products.add(product);
+        }
+
+        return new Return(id, date, sale, products, reason);
     }
 
     @Override
