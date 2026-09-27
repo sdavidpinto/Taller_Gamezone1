@@ -96,6 +96,25 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
             productService.restoreStock(item.getIdentifier(), 1);
         }
     }
+    
+    /**
+     * Calcula el total de ventas de un mes y año dados, usando el total
+     * final de cada venta (que ya refleja descuentos por promociones y
+     * costos adicionales por garantías extendidas), no el precio de lista.
+     *
+     * @param month el mes a evaluar (1-12)
+     * @param year el año a evaluar
+     * @return la suma de los totales finales de las ventas de ese período
+     */
+    public double calculateMonthlySales(int month, int year) {
+        double salesTotal = 0;
+        for (Sale sale : saleService.findAll()) {
+            if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
+                salesTotal += sale.getTotal();
+            }
+        }
+        return salesTotal;
+    }
 
 /**
  * Valida que cada identificador de producto solicitado realmente
