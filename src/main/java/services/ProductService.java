@@ -59,4 +59,17 @@ public class ProductService {
     public boolean deleteProduct(String identifier) {
         return productRepository.deleteByIdentifier(identifier);
     }
+    
+    public boolean restoreStock(String identifier, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("La cantidad a restaurar debe ser mayor a 0.");
+        }
+        Product existente = productRepository.findByIdentifier(identifier);
+        if (existente == null) {
+            return false;
+        }
+        existente.setAvailableQuantity(existente.getAvailableQuantity() + quantity);
+        return productRepository.update(existente);
+    }
+    
 }
