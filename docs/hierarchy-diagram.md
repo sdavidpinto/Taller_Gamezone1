@@ -65,4 +65,9 @@ classDiagram
 
     Warranty <|-- BasicWarranty
     Warranty <|-- ExtendedWarranty
+
+    %% Nota: Return (model) es una clase nueva de la funcionalidad de
+    %% devoluciones, pero no participa de ninguna jerarquía de herencia:
+    %% es una clase concreta e independiente que solo se asocia con
+    %% Sale y Product (ver class-diagram.md y layers-diagram.md).
 ```
