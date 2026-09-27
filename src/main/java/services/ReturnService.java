@@ -43,20 +43,21 @@ public class ReturnService {
     }
     
     /**
- * Registra una nueva devolución luego de validar la existencia de la
- * venta, el plazo de 30 días para devoluciones, y que los productos
- * solicitados realmente pertenezcan a la venta original. Si todo es
- * válido, restaura el stock de los productos devueltos y persiste la
- * nueva devolución.
- *
- * @param saleId el código de la venta original
- * @param productIds los identificadores de los productos a devolver
- * @param reason el motivo de la devolución
- * @return la devolución recién creada
- * @throws IllegalArgumentException si la venta no existe, si el plazo
- *         de 30 días ya expiró, o si algún producto no pertenece a la venta
- */
-public Return registerReturn(String saleId, List<String> productIds, String reason) {
+    * Registra una nueva devolución luego de validar la existencia de la
+    * venta, el plazo de 30 días para devoluciones, y que los productos
+    * solicitados realmente pertenezcan a la venta original. Si todo es
+    * válido, restaura el stock de los productos devueltos y persiste la
+    * nueva devolución.
+    *
+    * @param saleId el código de la venta original
+    * @param productIds los identificadores de los productos a devolver
+    * @param reason el motivo de la devolución
+    * @return la devolución recién creada
+    * @throws IllegalArgumentException si la venta no existe, si el plazo
+    *         de 30 días ya expiró, o si algún producto no pertenece a la venta
+    */
+    
+    public Return registerReturn(String saleId, List<String> productIds, String reason) {
     Sale sale = saleService.findByCode(saleId);
     if (sale == null) {
         throw new IllegalArgumentException("No existe una venta con el código: " + saleId);
@@ -114,6 +115,23 @@ public Return registerReturn(String saleId, List<String> productIds, String reas
             }
         }
         return salesTotal;
+    }
+    
+    /**
+     * Calcula el total reembolsado por devoluciones de un mes y año dados.
+     *
+     * @param month el mes a evaluar (1-12)
+     * @param year el año a evaluar
+     * @return la suma de los montos reembolsados en las devoluciones de ese período
+     */
+    public double calculateMonthlyReturns(int month, int year) {
+        double returnsTotal = 0;
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
+                returnsTotal += r.getRefundAmount();
+            }
+        }
+        return returnsTotal;
     }
 
 /**
