@@ -48,7 +48,9 @@ public class Main {
         SaleRepository saleRepository = new SaleRepositoryFile(
                 dataFile("sales.txt"),
                 clientRepository::findByIdNumber,
-                sellerRepository::findByIdNumber
+                sellerRepository::findByIdNumber,
+                productRepository::findByIdentifier,
+                accessoryRepository::findByIdentifier
         );
         WarrantyRepository warrantyRepository = new WarrantyRepositoryFile(dataFile("warranties.csv"));
 
