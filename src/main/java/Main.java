@@ -13,6 +13,8 @@ import persistence.PromotionRepository;
 import persistence.PromotionRepositoryFile;
 import persistence.WarrantyRepository;
 import persistence.WarrantyRepositoryFile;
+import persistence.ReturnRepository;
+import persistence.ReturnRepositoryFile;
 import services.PromotionService;
 import services.ClientService;
 import services.ProductService;
@@ -20,6 +22,7 @@ import services.AccessoryService;
 import services.SaleService;
 import services.SellerService;
 import services.WarrantyService;
+import services.ReturnService;
 import ui.MenuUI;
 
 public class Main {
@@ -48,7 +51,7 @@ public class Main {
                 sellerRepository::findByIdNumber
         );
         WarrantyRepository warrantyRepository = new WarrantyRepositoryFile(dataFile("warranties.csv"));
-
+        
         // --- Capa service: reciben los repositorios por constructor ---
         ClientService clientService = new ClientService(clientRepository);
         SellerService sellerService = new SellerService(sellerRepository);
@@ -57,9 +60,11 @@ public class Main {
         PromotionService promotionService = new PromotionService(promotionRepository);
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleRepository, productService);
         SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository, accessoryRepository, promotionService, warrantyService);
+        ReturnRepository returnRepository = new ReturnRepositoryFile(dataFile("returns.csv"), saleService, productService);
+        ReturnService returnService = new ReturnService(returnRepository, saleService, productService);
 
         // --- Capa ui: recibe los services por constructor ---
-        MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService, accesoryService, promotionService, warrantyService);
+        MenuUI menu = new MenuUI(clientService, sellerService, productService, saleService, accesoryService, promotionService, warrantyService, returnService);
         menu.start();
     }
 }
