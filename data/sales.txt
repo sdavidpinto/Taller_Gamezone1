@@ -1,19 +1,29 @@
-code: V0
-Sale date: 2026-09-06
+code: V1
+Sale date: 2026-09-27
 Client: 1
-Seller: 23
+Seller: 1
 Products:
-  - PLAY 5 ($500000.0)
-Total: $500000.0
---------------------------
-code: v2
-Sale date: 2026-09-25
-Client: 1
-Seller: 23
-Products:
-  - PLAY 5 ($500000.0)
-Subtotal: $500000.0
+  - [PS1] PLAY 5 ($500000.0)
+  - [V02] V02 ($5000000.0)
+  - [M1] mando ($3000.0)
+Subtotal: $5503000.0
 Promotion applied: promocion random
 Discount: -$250000.0
-Total: $250000.0
+Warranty cost: $50300.0
+Total: $5303300.0
+--------------------------
+code: V2
+Sale date: 2026-09-27
+Client: 2
+Seller: 2
+Products:
+  - [PS1] PLAY 5 ($500000.0)
+  - [V01] Minecraft ($3000.0)
+  - [M1] mando ($3000.0)
+  - [M2] mando ($3000.0)
+Subtotal: $509000.0
+Promotion applied: promocion random
+Discount: -$250000.0
+Warranty cost: $300.0
+Total: $259300.0
 --------------------------

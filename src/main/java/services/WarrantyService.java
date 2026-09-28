@@ -99,21 +99,18 @@ public class WarrantyService {
      */
     public double cancelWarranties(String productId, String saleCode) {
         List<Warranty> warranties = loadAllResolved();
-        Warranty toCancel = null;
+        List<Warranty> remaining = new ArrayList<>();
+        double refundableAmount = 0;
         for (Warranty warranty : warranties) {
             boolean sameProduct = warranty.getProduct().getIdentifier().equals(productId);
             boolean sameSale = warranty.getSale().getCode().equals(saleCode);
             if (sameProduct && sameSale) {
-                toCancel = warranty;
-                break;
+            refundableAmount += warranty.getAdditionalCost();
+            } else {
+                remaining.add(warranty);
             }
         }
-        if (toCancel == null) {
-            return 0;
-        }
-        double refundableAmount = toCancel.getAdditionalCost();
-        warranties.remove(toCancel);
-        warrantyRepository.saveAll(warranties);
+        warrantyRepository.saveAll(remaining);
         return refundableAmount;
     }
     
