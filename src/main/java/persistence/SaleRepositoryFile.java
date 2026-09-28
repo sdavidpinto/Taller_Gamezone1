@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import model.Accessory;
 
 /**
  * Implementación de SaleRepository que guarda y lee las ventas en un
@@ -31,21 +32,25 @@ import java.util.regex.Pattern;
 public class SaleRepositoryFile implements SaleRepository {
 
     private static final String SEPARADOR = "--------------------------";
-    private static final Pattern PRODUCTO_PATTERN = Pattern.compile("^\\s*-\\s*(.+?)\\s*\\(\\$(.+?)\\)\\s*$");
+    private static final Pattern PRODUCTO_PATTERN = Pattern.compile("^\\s*-\\s*\\[(.+?)\\]\\s*(.+?)\\s*\\(\\$(.+?)\\)\\s*$");
 
     private final String filePath;
     private final Function<String, Client> clientFinder; // recibe idNumber
     private final Function<String, Seller> sellerFinder; // recibe idNumber
+    private final Function<String, Product> productResolver;
+    private final Function<String, Accessory> accessoryResolver;
 
     /**
      * @param filePath     ruta del archivo de ventas
      * @param clientFinder función que, dado un idNumber de cliente, devuelve el Client real
      * @param sellerFinder función que, dado un idNumber de vendedor, devuelve el Seller real
      */
-    public SaleRepositoryFile(String filePath, Function<String, Client> clientFinder, Function<String, Seller> sellerFinder) {
+    public SaleRepositoryFile(String filePath, Function<String, Client> clientFinder, Function<String, Seller> sellerFinder,Function<String, Product> productResolver,Function<String, Accessory> accessoryResolver) {
         this.filePath = filePath;
         this.clientFinder = clientFinder;
         this.sellerFinder = sellerFinder;
+        this.productResolver = productResolver;
+        this.accessoryResolver = accessoryResolver;
         createFileIfNotExists();
     }
 
@@ -210,9 +215,15 @@ public class SaleRepositoryFile implements SaleRepository {
         } else {
             Matcher m = PRODUCTO_PATTERN.matcher(linea);
             if (m.matches()) {
-                String titulo = m.group(1);
-                double precio = Double.parseDouble(m.group(2));
-                productos.add(new SimpleProduct(titulo, precio));
+                String identifier = m.group(1);
+                Product resolved = resolveItem(identifier);
+                if (resolved != null) {
+                    productos.add(resolved);
+                } else {
+                    String titulo = m.group(2);
+                    double precio = Double.parseDouble(m.group(3));
+                    productos.add(new SimpleProduct(titulo, precio));
+                }
             }
         }
     }
@@ -247,4 +258,12 @@ public class SaleRepositoryFile implements SaleRepository {
         return getTitle() + " - $" + getPrice();
     }
  }
+  
+  private Product resolveItem(String identifier) {
+    Product product = productResolver.apply(identifier);
+    if (product != null) {
+        return product;
+    }
+    return accessoryResolver.apply(identifier);
+}
     }

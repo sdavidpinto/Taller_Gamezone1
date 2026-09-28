@@ -135,7 +135,7 @@ public class Sale {
 public String Display() {
     StringBuilder productosStr = new StringBuilder();
     for (Product product : products) {
-        productosStr.append("  - ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
+        productosStr.append("  - [").append(product.getIdentifier()).append("] ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
     }
 
     double subtotal = total + discountAmount - warrantyCost;
