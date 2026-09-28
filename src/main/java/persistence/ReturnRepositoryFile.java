@@ -174,7 +174,7 @@ public class ReturnRepositoryFile implements ReturnRepository {
         if (warrantyRefund > 0) {
             r.addWarrantyRefund(warrantyRefund);
         }
-        return new Return(id, date, sale, items, reason);
+        return r;
     }
 
     /**

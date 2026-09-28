@@ -1,1 +1,3 @@
 idNumber: 23; name: ang; phone: 232; employeeCode: 66; shift: noche
+idNumber: 2; name: jason; phone: 341; employeeCode: 2; shift: noche
+idNumber: 1; name: mason; phone: 32; employeeCode: 1; shift: noche
