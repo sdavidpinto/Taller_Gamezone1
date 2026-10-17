@@ -1,5 +1,8 @@
 package services;
 
+import validation.ProductValidator;
+import exceptions.InvalidDataException;
+
 import model.Console;
 import model.Product;
 import model.VideoGame;
@@ -23,24 +26,22 @@ public class ProductService {
 
     public void registerVideoGame(String identifier, String title, double price, int stock,
                                     String platform, String genre, String ageRating) {
-        if (productRepository.findByIdentifier(identifier) != null) {
-            throw new IllegalArgumentException("Ya existe un producto con identifier: " + identifier);
-        }
+        ProductValidator.validateProductData(identifier, title, price, stock);
         Product videoGame = new VideoGame(identifier, title, price, stock, platform, genre, ageRating);
         productRepository.save(videoGame);
     }
 
     public void registerConsole(String identifier, String title, double price, int stock,
                                   String brand, String model, String generation) {
-        if (productRepository.findByIdentifier(identifier) != null) {
-            throw new IllegalArgumentException("Ya existe un producto con identifier: " + identifier);
-        }
+        ProductValidator.validateProductData(identifier, title, price, stock);
         Product console = new Console(identifier, title, price, stock, brand, model, generation);
         productRepository.save(console);
     }
 
     public Product findByIdentifier(String identifier) {
-        return productRepository.findByIdentifier(identifier);
+        Product product = productRepository.findByIdentifier(identifier);
+        ProductValidator.validateProductExists(product, identifier);
+        return product;
     }
 
     public List<Product> findAll() {
@@ -49,25 +50,25 @@ public class ProductService {
 
     public boolean updateStock(String identifier, int nuevoStock) {
         Product existente = productRepository.findByIdentifier(identifier);
-        if (existente == null) {
-            return false;
-        }
+        ProductValidator.validateProductExists(existente, identifier);
+        ProductValidator.validateProductData(
+                existente.getIdentifier(), existente.getTitle(), existente.getPrice(), nuevoStock);
         existente.setAvailableQuantity(nuevoStock);
         return productRepository.update(existente);
     }
 
     public boolean deleteProduct(String identifier) {
+        Product product = productRepository.findByIdentifier(identifier);
+        ProductValidator.validateProductExists(product, identifier);
         return productRepository.deleteByIdentifier(identifier);
     }
     
     public boolean restoreStock(String identifier, int quantity) {
         if (quantity <= 0) {
-            throw new IllegalArgumentException("La cantidad a restaurar debe ser mayor a 0.");
+            throw new InvalidDataException("cantidad", "debe ser mayor que cero");
         }
         Product existente = productRepository.findByIdentifier(identifier);
-        if (existente == null) {
-            return false;
-        }
+        ProductValidator.validateProductExists(existente, identifier);
         existente.setAvailableQuantity(existente.getAvailableQuantity() + quantity);
         return productRepository.update(existente);
     }
