@@ -3,6 +3,11 @@ package ui;
 import java.util.ArrayList;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import exceptions.BusinessRuleException;
+import exceptions.GameZoneException;
+import exceptions.InvalidDataException;
+import exceptions.PersistenceException;
+import exceptions.ResourceNotFoundException;
 import model.Client;
 import model.Product;
 import model.Sale;
@@ -33,10 +38,16 @@ import java.util.List;
  * Capa de presentación (UI) con JOptionPane.
  *
  * Esta clase NO conoce los repositorios ni el formato de persistencia:
- * solo recibe los 4 Services ya construidos (inyección de dependencias
+ * solo recibe los Services ya construidos (inyección de dependencias
  * por constructor) y los llama para cumplir cada opción del menú.
  * Si mañana cambia cómo se guardan los datos (archivo, SQL, memoria),
  * esta clase no se entera ni se modifica.
+ *
+ * Manejo de errores: los Services lanzan la jerarquía GameZoneException
+ * (ResourceNotFoundException, BusinessRuleException, InvalidDataException
+ * y PersistenceException). Esta clase las captura por tipo y muestra un
+ * mensaje distinto en español para cada categoría; el usuario nunca ve
+ * una traza de excepción ni un mensaje técnico.
  */
 public class MenuUI {
 
@@ -48,9 +59,9 @@ public class MenuUI {
     private final PromotionService promotionService;
     private final WarrantyService warrantyService;
     private final ReturnService returnService;
-    
+
     public MenuUI(ClientService clientService, SellerService sellerService,
-                   ProductService productService, SaleService saleService, AccessoryService accessoryService,PromotionService promotionService, WarrantyService warrantyService,ReturnService returnService) {
+                   ProductService productService, SaleService saleService, AccessoryService accessoryService, PromotionService promotionService, WarrantyService warrantyService, ReturnService returnService) {
         this.clientService = clientService;
         this.sellerService = sellerService;
         this.productService = productService;
@@ -58,12 +69,14 @@ public class MenuUI {
         this.accessoryService = accessoryService;
         this.promotionService = promotionService;
         this.warrantyService = warrantyService;
-        this.returnService=returnService;
+        this.returnService = returnService;
     }
 
     /**
      * Inicia el ciclo del menú principal. Se queda corriendo hasta que
-     * el usuario elige "Salir".
+     * el usuario elige "Salir". Cualquier excepción que se escape de un
+     * submenú se captura aquí, por tipo, y se muestra con un mensaje
+     * diferenciado; después el menú principal vuelve a mostrarse.
      */
     public void start() {
         int opcion;
@@ -86,17 +99,33 @@ public class MenuUI {
 
             opcion = parseOption(entrada);
 
-            switch (opcion) {
-                case 1 -> clientsMenu();
-                case 2 -> sellersMenu();
-                case 3 -> productsMenu();
-                case 4 -> salesMenu();
-                case 5 -> accessoriesMenu();
-                case 6 -> promotionsMenu();
-                case 7 -> warrantiesMenu();
-                case 8 -> returnsMenu();
-                case 0 -> JOptionPane.showMessageDialog(null, "Hasta luego.");
-                default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+            try {
+                switch (opcion) {
+                    case 1 -> clientsMenu();
+                    case 2 -> sellersMenu();
+                    case 3 -> productsMenu();
+                    case 4 -> salesMenu();
+                    case 5 -> accessoriesMenu();
+                    case 6 -> promotionsMenu();
+                    case 7 -> warrantiesMenu();
+                    case 8 -> returnsMenu();
+                    case 0 -> JOptionPane.showMessageDialog(null, "Hasta luego.");
+                    default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+                }
+            } catch (ResourceNotFoundException e) {
+                showError("Recurso no encontrado", messageFor(e));
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e));
+            } catch (InvalidDataException e) {
+                showError("Datos inválidos", messageFor(e));
+            } catch (PersistenceException e) {
+                showError("Error de datos", messageFor(e));
+            } catch (GameZoneException e) {
+                // Subclase de GameZoneException que no tiene catch propio
+                showError("Error", messageFor(e));
+            } catch (RuntimeException e) {
+                // Último recurso: el usuario nunca recibe una traza cruda
+                showError("Error inesperado", "Ocurrió un error inesperado. Contacte al administrador.");
             }
         } while (opcion != 0);
     }
@@ -107,6 +136,37 @@ public class MenuUI {
         } catch (NumberFormatException e) {
             return -1;
         }
+    }
+
+    // ================= MANEJO DE ERRORES =================
+
+    /**
+     * Construye el mensaje en español que ve el usuario según el tipo de
+     * excepción. Es la única clase de la UI que decide el texto de cada
+     * categoría de error.
+     */
+    private String messageFor(GameZoneException e) {
+        if (e instanceof ResourceNotFoundException) {
+            return "No se encontró el recurso solicitado: " + e.getMessage();
+        }
+        if (e instanceof BusinessRuleException) {
+            return "No se puede completar la operación: " + e.getMessage();
+        }
+        if (e instanceof InvalidDataException) {
+            return "Los datos ingresados no son válidos: " + e.getMessage();
+        }
+        if (e instanceof PersistenceException) {
+            // No se muestra el detalle: es técnico y solo sirve al administrador
+            return "Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.";
+        }
+        return "No se pudo completar la operación. Contacte al administrador.";
+    }
+
+    /**
+     * Muestra un error con el ícono de advertencia y el título indicado.
+     */
+    private void showError(String titulo, String mensaje) {
+        JOptionPane.showMessageDialog(null, mensaje, titulo, JOptionPane.WARNING_MESSAGE);
     }
 
     // ================= CLIENTES =================
@@ -133,7 +193,7 @@ public class MenuUI {
         }
     }
 
-        /**
+    /**
      * Pide una fecha en formato ISO (yyyy-MM-dd) repitiendo la pregunta
      * mientras el texto no se pueda convertir a LocalDate. Devuelve null
      * si el usuario cancela.
@@ -151,8 +211,8 @@ public class MenuUI {
             }
         }
     }
-    
-     /**
+
+    /**
      * Pide la confirmacion para el tipo de control usado en los accessorios.
      */
     private Boolean askYesNo(String mensaje) {
@@ -160,6 +220,7 @@ public class MenuUI {
         if (opcion == JOptionPane.CLOSED_OPTION) return null;
         return opcion == JOptionPane.YES_OPTION;
     }
+
     /**
      * Pide un texto obligatorio repitiendo la pregunta mientras venga vacío
      * o en blanco. Si el usuario cancela el diálogo, se interrumpe todo el
@@ -176,7 +237,7 @@ public class MenuUI {
                 JOptionPane.showMessageDialog(null, "Este campo no puede quedar vacío.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
             }
         } while (valor.isBlank());
-        return valor;
+        return valor.trim();
     }
 
     /**
@@ -217,6 +278,23 @@ public class MenuUI {
         }
     }
 
+    /**
+     * Pide un entero dentro de un rango (inclusive) repitiendo la pregunta
+     * mientras el valor quede fuera. Devuelve null si el usuario cancela.
+     */
+    private Integer askIntInRange(String mensaje, int min, int max) {
+        while (true) {
+            Integer valor = askInt(mensaje);
+            if (valor == null) {
+                return null;
+            }
+            if (valor >= min && valor <= max) {
+                return valor;
+            }
+            JOptionPane.showMessageDialog(null, "El valor debe estar entre " + min + " y " + max + ".", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
     private void registerClient() {
         String name = askRequiredText("Nombre:");
         if (name == null) return;
@@ -227,7 +305,9 @@ public class MenuUI {
 
         // Este do-while es distinto: no valida formato, valida una regla
         // de negocio (ID duplicado) que solo el service conoce. Por eso
-        // reintenta atrapando la excepción que lanza clientService.
+        // reintenta atrapando BusinessRuleException. Los demás errores
+        // (por ejemplo, email inválido o fallo de persistencia) suben al
+        // manejador de start() y cancelan el registro con su mensaje.
         boolean registrado = false;
         do {
             String idNumber = askRequiredText("Identificación:");
@@ -235,8 +315,8 @@ public class MenuUI {
             try {
                 clientService.registerClient(name, idNumber, phone, email);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otra identificación.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otra identificación.");
             }
         } while (!registrado);
 
@@ -244,7 +324,8 @@ public class MenuUI {
     }
 
     private void searchClient() {
-        String idNumber = JOptionPane.showInputDialog("ID del cliente a buscar:");
+        String idNumber = askRequiredText("ID del cliente a buscar:");
+        if (idNumber == null) return;
         Client c = clientService.findByIdNumber(idNumber);
 
         if (c == null) {
@@ -303,7 +384,8 @@ public class MenuUI {
     }
 
     private void deleteClient() {
-        String idNumber = JOptionPane.showInputDialog("ID del cliente a eliminar:");
+        String idNumber = askRequiredText("ID del cliente a eliminar:");
+        if (idNumber == null) return;
         boolean ok = clientService.deleteClient(idNumber);
         JOptionPane.showMessageDialog(null, ok ? "Cliente eliminado." : "No se encontró el cliente.");
     }
@@ -349,8 +431,8 @@ public class MenuUI {
             try {
                 sellerService.registerSeller(name, idNumber, phone, employeeCode, shift);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otra identificación.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otra identificación.");
             }
         } while (!registrado);
 
@@ -358,7 +440,8 @@ public class MenuUI {
     }
 
     private void searchSeller() {
-        String idNumber = JOptionPane.showInputDialog("ID del vendedor a buscar:");
+        String idNumber = askRequiredText("ID del vendedor a buscar:");
+        if (idNumber == null) return;
         Seller s = sellerService.findByIdNumber(idNumber);
 
         if (s == null) {
@@ -419,7 +502,8 @@ public class MenuUI {
     }
 
     private void deleteSeller() {
-        String idNumber = JOptionPane.showInputDialog("ID del vendedor a eliminar:");
+        String idNumber = askRequiredText("ID del vendedor a eliminar:");
+        if (idNumber == null) return;
         boolean ok = sellerService.deleteSeller(idNumber);
         JOptionPane.showMessageDialog(null, ok ? "Vendedor eliminado." : "No se encontró el vendedor.");
     }
@@ -471,8 +555,8 @@ public class MenuUI {
             try {
                 productService.registerVideoGame(identifier, title, price, stock, platform, genre, ageRating);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro identificador.");
             }
         } while (!registrado);
 
@@ -500,8 +584,8 @@ public class MenuUI {
             try {
                 productService.registerConsole(identifier, title, price, stock, brand, model, generation);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro identificador.");
             }
         } while (!registrado);
 
@@ -509,7 +593,8 @@ public class MenuUI {
     }
 
     private void searchProduct() {
-        String identifier = JOptionPane.showInputDialog("Identifier del producto a buscar:");
+        String identifier = askRequiredText("Identifier del producto a buscar:");
+        if (identifier == null) return;
         Product p = productService.findByIdentifier(identifier);
         JOptionPane.showMessageDialog(null, p != null ? p.getDescription() : "No se encontró el producto.");
     }
@@ -543,7 +628,8 @@ public class MenuUI {
     }
 
     private void deleteProduct() {
-        String identifier = JOptionPane.showInputDialog("Identifier del producto a eliminar:");
+        String identifier = askRequiredText("Identifier del producto a eliminar:");
+        if (identifier == null) return;
         boolean ok = productService.deleteProduct(identifier);
         JOptionPane.showMessageDialog(null, ok ? "Producto eliminado." : "No se encontró el producto.");
     }
@@ -596,31 +682,34 @@ public class MenuUI {
 
         // El texto de productos se valida con un do-while propio: primero
         // que no venga vacío, y después que el registro con saleService no
-        // falle por producto inexistente o sin stock (ahí sí se necesita
-        // el service, porque el stock cambia en cada intento).
+        // falle por producto inexistente (ResourceNotFoundException) o sin
+        // stock / venta duplicada (BusinessRuleException). En esos dos casos
+        // se muestra el mensaje diferenciado y se reintenta.
         boolean registrado = false;
         Sale venta = null;
         do {
             String productosTexto = askRequiredText("Identificadores de productos separados por coma (ej: P001,P002):");
             if (productosTexto == null) return;
             List<String> productIds = Arrays.asList(productosTexto.split("\\s*,\\s*"));
-            
+
             String accesoriosTexto = JOptionPane.showInputDialog("Identificadores de accesorios separados por coma (opcional, deja vacío si no aplica):");
             if (accesoriosTexto == null) return; // el usuario canceló
             List<String> accessoryIds = accesoriosTexto.isBlank()
                     ? new ArrayList<>()
-                    : Arrays.asList(accesoriosTexto.split("\\s*,\\s*"));
+                    : Arrays.asList(accesoriosTexto.trim().split("\\s*,\\s*"));
             String garantiaExtendidaTexto = JOptionPane.showInputDialog("Identificadores de productos con garantía extendida, separados por coma (opcional, deja vacío si no aplica):");
             if (garantiaExtendidaTexto == null) return; // el usuario canceló
             List<String> extendedWarrantyProductIds = garantiaExtendidaTexto.isBlank()
                     ? new ArrayList<>()
-                    : Arrays.asList(garantiaExtendidaTexto.split("\\s*,\\s*"));
-            
+                    : Arrays.asList(garantiaExtendidaTexto.trim().split("\\s*,\\s*"));
+
             try {
-                venta = saleService.registerSale(code, clientId, sellerId, productIds,accessoryIds, extendedWarrantyProductIds);
+                venta = saleService.registerSale(code, clientId, sellerId, productIds, accessoryIds, extendedWarrantyProductIds);
                 registrado = true;
-            } catch (IllegalArgumentException | IllegalStateException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores de producto e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (ResourceNotFoundException e) {
+                showError("Recurso no encontrado", messageFor(e) + "\nRevisa los identificadores e intenta de nuevo.");
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nRevisa los identificadores e intenta de nuevo.");
             }
         } while (!registrado);
 
@@ -628,7 +717,8 @@ public class MenuUI {
     }
 
     private void searchSale() {
-        String code = JOptionPane.showInputDialog("Código de la venta a buscar:");
+        String code = askRequiredText("Código de la venta a buscar:");
+        if (code == null) return;
         Sale s = saleService.findByCode(code);
         JOptionPane.showMessageDialog(null, s != null ? s.Display() : "No se encontró la venta.");
     }
@@ -639,7 +729,7 @@ public class MenuUI {
         JScrollPane tabla = new JScrollPane(salida);
         salida.setText("code\tdate\tclient\tseller\ttotal\n");
         for (Sale s : ventas) {
-            salida.append(s.getCode()+ "\t" + s.getDate()+ "\t"
+            salida.append(s.getCode() + "\t" + s.getDate() + "\t"
                     + s.getClient().getName() + "\t" + s.getSeller().getName()
                     + "\t$" + s.getTotal() + "\n");
         }
@@ -647,41 +737,41 @@ public class MenuUI {
     }
 
     private void cancelSale() {
-        String code = JOptionPane.showInputDialog("Código de la venta a cancelar:");
+        String code = askRequiredText("Código de la venta a cancelar:");
+        if (code == null) return;
         boolean ok = saleService.cancelSale(code);
         JOptionPane.showMessageDialog(null, ok ? "Venta cancelada, stock devuelto." : "No se encontró la venta.");
     }
-    
-    
+
     // ================= ACCESORIOS =================
 
     private void accessoriesMenu() {
-    String menu = "=== Accesorios ===\n"
-            + "1. Registrar Control\n"
-            + "2. Registrar Cable\n"
-            + "3. Registrar Memoria\n"
-            + "4. Listar todos\n"
-            + "5. Listar por tipo\n"
-            + "6. Consultar compatibles con una consola (por marca)\n"
-            + "7. Agregar producto compatible a un accesorio\n"
-            + "8. Listar accesorios compatibles con un producto (específico)\n"
-            + "0. Volver";
-    String entrada = JOptionPane.showInputDialog(null, menu, "Accesorios", JOptionPane.PLAIN_MESSAGE);
-    if (entrada == null) return;
+        String menu = "=== Accesorios ===\n"
+                + "1. Registrar Control\n"
+                + "2. Registrar Cable\n"
+                + "3. Registrar Memoria\n"
+                + "4. Listar todos\n"
+                + "5. Listar por tipo\n"
+                + "6. Consultar compatibles con una consola (por marca)\n"
+                + "7. Agregar producto compatible a un accesorio\n"
+                + "8. Listar accesorios compatibles con un producto (específico)\n"
+                + "0. Volver";
+        String entrada = JOptionPane.showInputDialog(null, menu, "Accesorios", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) return;
 
-    switch (parseOption(entrada)) {
-        case 1 -> registerController();
-        case 2 -> registerCable();
-        case 3 -> registerMemory();
-        case 4 -> listAllAccessories();
-        case 5 -> listAccessoriesByType();
-        case 6 -> consultCompatibleAccessories();
-        case 7 -> addCompatibleProduct();
-        case 8 -> listCompatibleAccessories();
-        case 0 -> { /* volver */ }
-        default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        switch (parseOption(entrada)) {
+            case 1 -> registerController();
+            case 2 -> registerCable();
+            case 3 -> registerMemory();
+            case 4 -> listAllAccessories();
+            case 5 -> listAccessoriesByType();
+            case 6 -> consultCompatibleAccessories();
+            case 7 -> addCompatibleProduct();
+            case 8 -> listCompatibleAccessories();
+            case 0 -> { /* volver */ }
+            default -> JOptionPane.showMessageDialog(null, "Opción inválida.");
+        }
     }
-}
 
     private void registerController() {
         String title = askRequiredText("Título:");
@@ -702,8 +792,8 @@ public class MenuUI {
             try {
                 accessoryService.registerAccessory(new Controller(identifier, title, price, stock, brand, alambric));
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro identificador.");
             }
         } while (!registrado);
 
@@ -731,8 +821,8 @@ public class MenuUI {
             try {
                 accessoryService.registerAccessory(new Cable(identifier, title, price, stock, brand, connectionType, length));
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro identificador.");
             }
         } while (!registrado);
 
@@ -760,8 +850,8 @@ public class MenuUI {
             try {
                 accessoryService.registerAccessory(new Memory(identifier, title, price, stock, brand, memoryType, storage));
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro identificador.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro identificador.");
             }
         } while (!registrado);
 
@@ -820,6 +910,7 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
+
     private void addCompatibleProduct() {
         String accessoryId = askRequiredText("Identifier del accesorio:");
         if (accessoryId == null) return;
@@ -838,12 +929,10 @@ public class MenuUI {
             return;
         }
 
-        try {
-            accessoryService.addCompatibleProduct(accessoryId, product);
-            JOptionPane.showMessageDialog(null, "Producto agregado como compatible correctamente.");
-        } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.WARNING_MESSAGE);
-        }
+        // Si el service rechaza la operación, la excepción tipada sube
+        // a start() y se muestra con el mensaje de su categoría.
+        accessoryService.addCompatibleProduct(accessoryId, product);
+        JOptionPane.showMessageDialog(null, "Producto agregado como compatible correctamente.");
     }
 
     private void listCompatibleAccessories() {
@@ -868,8 +957,8 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
-    
-       // ================= PROMOCIONES =================
+
+    // ================= PROMOCIONES =================
 
     private void promotionsMenu() {
         String menu = "=== Promociones ===\n"
@@ -912,8 +1001,8 @@ public class MenuUI {
             try {
                 promotionService.registerPercentageDiscount(id, name, startDate, endDate, percentage);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro ID.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro ID.");
             }
         } while (!registrado);
 
@@ -939,8 +1028,8 @@ public class MenuUI {
             try {
                 promotionService.registerCategoryDiscount(id, name, startDate, endDate, targetCategory, percentage);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro ID.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro ID.");
             }
         } while (!registrado);
 
@@ -966,8 +1055,8 @@ public class MenuUI {
             try {
                 promotionService.registerBulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
                 registrado = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nIntenta con otro ID.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nIntenta con otro ID.");
             }
         } while (!registrado);
 
@@ -998,11 +1087,12 @@ public class MenuUI {
     }
 
     private void searchPromotion() {
-        String id = JOptionPane.showInputDialog("ID de la promoción a buscar:");
+        String id = askRequiredText("ID de la promoción a buscar:");
+        if (id == null) return;
         Promotion p = promotionService.findById(id);
         JOptionPane.showMessageDialog(null, p != null ? p.getDescription() : "No se encontró la promoción.");
     }
-    
+
     // ================= GARANTIAS =================
 
     private void warrantiesMenu() {
@@ -1044,7 +1134,7 @@ public class MenuUI {
     }
 
     private void listWarrantiesExpiringSoon() {
-        Integer dias = askInt("¿Con cuántos días de anticipación quieres revisar?");
+        Integer dias = askIntInRange("¿Con cuántos días de anticipación quieres revisar?", 0, 3650);
         if (dias == null) return;
 
         displayWarrantyList(warrantyService.listWarrantiesExpiringSoon(dias), "No hay garantías próximas a vencer en ese período.");
@@ -1062,8 +1152,7 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
-    
-    
+
     // ================= DEVOLUCIONES =================
 
     private void returnsMenu() {
@@ -1111,8 +1200,10 @@ public class MenuUI {
             try {
                 devolucion = returnService.registerReturn(saleId, productIds, reason);
                 registrada = true;
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(null, e.getMessage() + "\nRevisa los identificadores e intenta de nuevo.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
+            } catch (ResourceNotFoundException e) {
+                showError("Recurso no encontrado", messageFor(e) + "\nRevisa los identificadores e intenta de nuevo.");
+            } catch (BusinessRuleException e) {
+                showError("Operación no permitida", messageFor(e) + "\nRevisa los identificadores e intenta de nuevo.");
             }
         } while (!registrada);
 
@@ -1147,15 +1238,15 @@ public class MenuUI {
         }
         JOptionPane.showMessageDialog(null, tabla);
     }
-    
+
     private void monthlyBalance() {
-        Integer month = askInt("Mes a consultar (1-12):");
+        Integer month = askIntInRange("Mes a consultar (1-12):", 1, 12);
         if (month == null) return;
         Integer year = askInt("Año a consultar (ej. 2026):");
         if (year == null) return;
 
         double balance = returnService.generateMonthlyBalance(month, year);
         JOptionPane.showMessageDialog(null, "Balance neto de " + month + "/" + year + ": $" + balance);
-}
-    
+    }
+
 }
