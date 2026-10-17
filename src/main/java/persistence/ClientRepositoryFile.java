@@ -1,5 +1,9 @@
 package persistence;
 
+import exceptions.PersistenceException;
+import exceptions.InvalidDataException;
+import exceptions.BusinessRuleException;
+
 import model.Client;
 
 import java.io.*;
@@ -14,6 +18,12 @@ public class ClientRepositoryFile implements ClientRepository {
 
     private final String filePath;
 
+    /**
+     * Crea un repositorio de clientes respaldado por el archivo indicado.
+     *
+     * @param filePath ruta del archivo de persistencia
+     * @throws PersistenceException si el archivo no puede crearse
+     */
     public ClientRepositoryFile(String filePath) {
         this.filePath = filePath;
         createFileIfNotExists();
@@ -34,27 +44,42 @@ public class ClientRepositoryFile implements ClientRepository {
             try {
                 archivo.createNewFile();
             } catch (IOException e) {
-                throw new RuntimeException("No se pudo crear el archivo: " + filePath, e);
+                throw new PersistenceException("No se pudo crear el archivo: " + filePath, e);
             }
         }
     }
 
+    /**
+     * Guarda un cliente en el archivo de persistencia.
+     *
+     * @param client cliente que se desea guardar
+     * @throws InvalidDataException si el cliente es nulo
+     * @throws BusinessRuleException si el cliente ya existe
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     @Override
     public void save(Client client) {
         if (client == null) {
-            throw new IllegalArgumentException("El cliente no puede ser nulo");
+            throw new InvalidDataException("cliente", "no puede ser nulo.");
         }
         if (findByIdNumber(client.getIdNumber()) != null) {
-            throw new IllegalArgumentException("Ya existe un cliente con ID: " + client.getIdNumber());
+            throw new BusinessRuleException("Ya existe un cliente con ID: " + client.getIdNumber());
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
             bw.write(toLine(client));
             bw.newLine();
         } catch (IOException e) {
-            throw new RuntimeException("Error guardando cliente en: " + filePath, e);
+            throw new PersistenceException("Error guardando cliente en: " + filePath, e);
         }
     }
 
+    /**
+     * Busca un cliente por su número de identificación.
+     *
+     * @param idNumber número de identificación del cliente
+     * @return cliente encontrado o {@code null} si no existe
+     * @throws PersistenceException si ocurre un error de lectura
+     */
     @Override
     public Client findByIdNumber(String idNumber) {
         for (Client c : findAll()) {
@@ -65,6 +90,12 @@ public class ClientRepositoryFile implements ClientRepository {
         return null;
     }
 
+    /**
+     * Obtiene todos los clientes almacenados.
+     *
+     * @return lista de clientes almacenados
+     * @throws PersistenceException si ocurre un error de lectura
+     */
     @Override
     public List<Client> findAll() {
         List<Client> clientes = new ArrayList<>();
@@ -76,11 +107,18 @@ public class ClientRepositoryFile implements ClientRepository {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error leyendo clientes de: " + filePath, e);
+            throw new PersistenceException("Error leyendo clientes de: " + filePath, e);
         }
         return clientes;
     }
 
+    /**
+     * Actualiza un cliente existente.
+     *
+     * @param client cliente con los datos actualizados
+     * @return {@code true} si fue actualizado; {@code false} si no existe
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     @Override
     public boolean update(Client client) {
         List<Client> clientes = findAll();
@@ -98,6 +136,13 @@ public class ClientRepositoryFile implements ClientRepository {
         return encontrado;
     }
 
+    /**
+     * Elimina un cliente por su número de identificación.
+     *
+     * @param idNumber número de identificación del cliente
+     * @return {@code true} si fue eliminado; {@code false} si no existe
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     @Override
     public boolean deleteByIdNumber(String idNumber) {
         List<Client> clientes = findAll();
@@ -108,6 +153,12 @@ public class ClientRepositoryFile implements ClientRepository {
         return eliminado;
     }
 
+    /**
+     * Reescribe el archivo con la lista de clientes indicada.
+     *
+     * @param clientes clientes que se escribirán
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     private void rewriteFile(List<Client> clientes) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
             for (Client c : clientes) {
@@ -115,10 +166,16 @@ public class ClientRepositoryFile implements ClientRepository {
                 bw.newLine();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error reescribiendo clientes en: " + filePath, e);
+            throw new PersistenceException("Error reescribiendo clientes en: " + filePath, e);
         }
     }
 
+    /**
+     * Convierte un cliente al formato de almacenamiento.
+     *
+     * @param c cliente que se desea convertir
+     * @return representación del cliente en una línea
+     */
     private String toLine(Client c) {
         return "idNumber: " + c.getIdNumber()
                 + "; name: " + c.getName()
@@ -126,6 +183,12 @@ public class ClientRepositoryFile implements ClientRepository {
                 + "; email: " + c.getEmail();
     }
 
+    /**
+     * Reconstruye un cliente desde una línea del archivo.
+     *
+     * @param linea línea con los datos del cliente
+     * @return cliente reconstruido
+     */
     private Client parseLine(String linea) {
         String[] partes = linea.split(";");
         String idNumber = partes[0].split(":", 2)[1].trim();

@@ -1,5 +1,9 @@
 package persistence;
 
+import exceptions.PersistenceException;
+import exceptions.InvalidDataException;
+import exceptions.BusinessRuleException;
+
 import model.Client;
 import model.Product;
 import model.Sale;
@@ -69,18 +73,26 @@ public class SaleRepositoryFile implements SaleRepository {
             try {
                 archivo.createNewFile();
             } catch (IOException e) {
-                throw new RuntimeException("No se pudo crear el archivo: " + filePath, e);
+                throw new PersistenceException("No se pudo crear el archivo: " + filePath, e);
             }
         }
     }
 
+    /**
+     * Guarda una venta en el archivo de persistencia.
+     *
+     * @param sale venta que se desea guardar
+     * @throws InvalidDataException si la venta es nula
+     * @throws BusinessRuleException si la venta ya existe
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     @Override
     public void save(Sale sale) {
         if (sale == null) {
-            throw new IllegalArgumentException("La venta no puede ser nula");
+            throw new InvalidDataException("venta", "no puede ser nula.");
         }
         if (findByCode(sale.getCode()) != null) {
-            throw new IllegalArgumentException("Ya existe una venta con el código: " + sale.getCode());
+            throw new BusinessRuleException("Ya existe una venta con el código: " + sale.getCode());
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
             bw.write(sale.Display());
@@ -88,10 +100,17 @@ public class SaleRepositoryFile implements SaleRepository {
             bw.write(SEPARADOR);
             bw.newLine();
         } catch (IOException e) {
-            throw new RuntimeException("Error guardando en el archivo: " + filePath, e);
+            throw new PersistenceException("Error guardando en el archivo: " + filePath, e);
         }
     }
 
+    /**
+     * Busca una venta por su código.
+     *
+     * @param code código de la venta
+     * @return venta encontrada o {@code null} si no existe
+     * @throws PersistenceException si ocurre un error de lectura
+     */
     @Override
     public Sale findByCode(String code) {
         for (Sale sale : findAll()) {
@@ -102,6 +121,12 @@ public class SaleRepositoryFile implements SaleRepository {
         return null;
     }
 
+    /**
+     * Obtiene todas las ventas almacenadas.
+     *
+     * @return lista de ventas almacenadas
+     * @throws PersistenceException si ocurre un error de lectura
+     */
     @Override
     public List<Sale> findAll() {
         List<Sale> ventas = new ArrayList<>();
@@ -123,7 +148,7 @@ public class SaleRepositoryFile implements SaleRepository {
                 ventas.add(parseBlock(bloqueActual));
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error leyendo el archivo: " + filePath, e);
+            throw new PersistenceException("Error leyendo el archivo: " + filePath, e);
         }
 
         return ventas;
@@ -152,6 +177,13 @@ public class SaleRepositoryFile implements SaleRepository {
         return encontrada;
     }
 
+    /**
+     * Elimina una venta por su código.
+     *
+     * @param code código de la venta
+     * @return {@code true} si fue eliminada; {@code false} si no existe
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     @Override
     public boolean deleteByCode(String code) {
         List<Sale> ventas = findAll();
@@ -162,6 +194,12 @@ public class SaleRepositoryFile implements SaleRepository {
         return eliminada;
     }
 
+    /**
+     * Reescribe el archivo con la lista de ventas indicada.
+     *
+     * @param ventas ventas que se escribirán
+     * @throws PersistenceException si ocurre un error de escritura
+     */
     private void rewriteFile(List<Sale> ventas) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
             for (Sale venta : ventas) {
@@ -171,12 +209,18 @@ public class SaleRepositoryFile implements SaleRepository {
                 bw.newLine();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error reescribiendo el archivo: " + filePath, e);
+            throw new PersistenceException("Error reescribiendo el archivo: " + filePath, e);
         }
     }
 
     // --- Parsing de un bloque de líneas a Sale ---
 
+    /**
+     * Reconstruye una venta desde un bloque de líneas del archivo.
+     *
+     * @param lineas líneas que representan la venta
+     * @return venta reconstruida
+     */
     private Sale parseBlock(List<String> lineas) {
     String code = null;
     LocalDate date = null;
@@ -231,10 +275,13 @@ public class SaleRepositoryFile implements SaleRepository {
     Client client = clientFinder.apply(clientId);
     Seller seller = sellerFinder.apply(sellerId);
     if (client == null) {
-        throw new IllegalStateException("No se encontró un Client con idNumber: " + clientId);
+        throw new PersistenceException( "No se encontró un Client con idNumber: " + clientId,
+        new IllegalArgumentException("Cliente inexistente: " + clientId));
     }
+
     if (seller == null) {
-        throw new IllegalStateException("No se encontró un Seller con idNumber: " + sellerId);
+        throw new PersistenceException( "No se encontró un Seller con idNumber: " + sellerId,
+        new IllegalArgumentException("Vendedor inexistente: " + sellerId));
     }
 
     Sale sale = new Sale(code, date, client, seller, productos);
@@ -253,12 +300,23 @@ public class SaleRepositoryFile implements SaleRepository {
     SimpleProduct(String title, double price) {
         super(title, title, price, 0);
     }
+    /**
+     * Obtiene la descripción del elemento resuelto.
+     *
+     * @return descripción del elemento
+     */
     @Override
     public String getDescription() {
         return getTitle() + " - $" + getPrice();
     }
  }
   
+    /**
+     * Resuelve un producto o accesorio por su identificador.
+     *
+     * @param identifier identificador del elemento
+     * @return producto o accesorio encontrado
+     */
   private Product resolveItem(String identifier) {
     Product product = productResolver.apply(identifier);
     if (product != null) {
