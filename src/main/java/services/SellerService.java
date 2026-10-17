@@ -1,5 +1,7 @@
 package services;
 
+import validation.PersonValidator;
+
 import model.Seller;
 import persistence.SellerRepository;
 
@@ -26,12 +28,12 @@ public class SellerService {
      * @param phone the contact phone number of the seller
      * @param employeeCode the employee code assigned to the seller
      * @param shift the work shift assigned to the seller
-     * @throws IllegalArgumentException if a seller with the same idNumber already exists
+     * @throws exceptions.InvalidDataException if a required field is blank
+     * @throws exceptions.BusinessRuleException if a seller with the same idNumber already exists
      */
     public void registerSeller(String name, String idNumber, String phone, String employeeCode, String shift) {
-        if (sellerRepository.findByIdNumber(idNumber) != null) {
-            throw new IllegalArgumentException("Ya existe un vendedor con ID: " + idNumber);
-        }
+        PersonValidator.validatePersonData(idNumber, name, phone);
+        PersonValidator.validateUniquePerson(sellerRepository.findAll(), idNumber);
         Seller seller = new Seller(name, idNumber, phone, employeeCode, shift);
         sellerRepository.save(seller);
     }
@@ -43,7 +45,9 @@ public class SellerService {
      * @return the seller with the given ID, or null if not found
      */
     public Seller findByIdNumber(String idNumber) {
-        return sellerRepository.findByIdNumber(idNumber);
+        Seller seller = sellerRepository.findByIdNumber(idNumber);
+        PersonValidator.validatePersonExists(seller, idNumber);
+        return seller;
     }
 
     /**
@@ -68,9 +72,8 @@ public class SellerService {
     public boolean updateSeller(String idNumber, String newName, String newPhone,
                                  String newEmployeeCode, String newShift) {
         Seller existingSeller = sellerRepository.findByIdNumber(idNumber);
-        if (existingSeller == null) {
-            return false;
-        }
+        PersonValidator.validatePersonExists(existingSeller, idNumber);
+        PersonValidator.validatePersonData(idNumber, newName, newPhone);
         existingSeller.setName(newName);
         existingSeller.setPhone(newPhone);
         existingSeller.setEmployeeCode(newEmployeeCode);
@@ -85,6 +88,8 @@ public class SellerService {
      * @return true if the seller was found and deleted, false otherwise
      */
     public boolean deleteSeller(String idNumber) {
+        Seller seller = sellerRepository.findByIdNumber(idNumber);
+        PersonValidator.validatePersonExists(seller, idNumber);
         return sellerRepository.deleteByIdNumber(idNumber);
     }
 }

@@ -43,17 +43,6 @@ public class SaleService {
     private final PromotionService promotionService;
     private final WarrantyService warrantyService;
     
-    /**
-     * Crea el servicio de ventas con sus repositorios y servicios colaboradores.
-     *
-     * @param saleRepository valor requerido por la operación
-     * @param clientRepository valor requerido por la operación
-     * @param sellerRepository valor requerido por la operación
-     * @param productRepository valor requerido por la operación
-     * @param accessoryRepository valor requerido por la operación
-     * @param promotionService valor requerido por la operación
-     * @param warrantyService valor requerido por la operación
-     */
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
                         SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService,WarrantyService warrantyService) {
         this.saleRepository = saleRepository;
@@ -72,11 +61,10 @@ public class SaleService {
      */
     public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber,List<String> productIdentifiers, List<String> accessoryIdentifiers,List<String> extendedWarrantyProductIds) {
 
-        SaleValidator.validateSaleHasItems(productIdentifiers, accessoryIdentifiers);
-        Client client = clientRepository.findByIdNumber(clientIdNumber);
-        PersonValidator.validatePersonExists(client, clientIdNumber, "cliente");
+                Client client = clientRepository.findByIdNumber(clientIdNumber);
+        PersonValidator.validatePersonExists(client, clientIdNumber);
         Seller seller = sellerRepository.findByIdNumber(sellerIdNumber);
-        PersonValidator.validatePersonExists(seller, sellerIdNumber, "vendedor");
+        PersonValidator.validatePersonExists(seller, sellerIdNumber);
 
 
         List<Product> products = new ArrayList<>();
@@ -141,21 +129,12 @@ public class SaleService {
         return sale;
     }
 
-    /**
-     * Busca una venta por su código.
-     *
-     * @param code código de la venta
-     * @return venta encontrada o {@code null} si no existe
-     */
     public Sale findByCode(String code) {
-        return saleRepository.findByCode(code);
+        Sale sale = saleRepository.findByCode(code);
+        SaleValidator.validateSaleExists(sale, code);
+        return sale;
     }
 
-    /**
-     * Obtiene todas las ventas registradas.
-     *
-     * @return lista de ventas
-     */
     public List<Sale> findAll() {
         return saleRepository.findAll();
     }
@@ -166,9 +145,7 @@ public class SaleService {
      */
     public boolean cancelSale(String code) {
         Sale sale = saleRepository.findByCode(code);
-        if (sale == null) {
-            return false;
-        }
+        SaleValidator.validateSaleExists(sale, code);
         for (Product p : sale.getProducts()) {
         if (p instanceof Accessory) {
             Accessory actualAccessory = accessoryRepository.findByIdentifier(p.getIdentifier());
@@ -188,11 +165,6 @@ public class SaleService {
         return saleRepository.deleteByCode(code);
     }
     
-    /**
-     * Aplica a la venta la promoción válida que produzca el mayor descuento.
-     *
-     * @param sale venta a la que se aplicará la promoción
-     */
     private void applyBestPromotion(Sale sale) {
         Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
         if (bestPromotion == null) {
