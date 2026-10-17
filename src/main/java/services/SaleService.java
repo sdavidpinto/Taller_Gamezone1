@@ -1,6 +1,11 @@
 
 package services;
 
+import validation.PersonValidator;
+import validation.ProductValidator;
+import validation.SaleValidator;
+import exceptions.ResourceNotFoundException;
+
 import java.time.LocalDate;
 import model.Client;
 import model.Product;
@@ -38,6 +43,17 @@ public class SaleService {
     private final PromotionService promotionService;
     private final WarrantyService warrantyService;
     
+    /**
+     * Crea el servicio de ventas con sus repositorios y servicios colaboradores.
+     *
+     * @param saleRepository valor requerido por la operación
+     * @param clientRepository valor requerido por la operación
+     * @param sellerRepository valor requerido por la operación
+     * @param productRepository valor requerido por la operación
+     * @param accessoryRepository valor requerido por la operación
+     * @param promotionService valor requerido por la operación
+     * @param warrantyService valor requerido por la operación
+     */
     public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
                         SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService,WarrantyService warrantyService) {
         this.saleRepository = saleRepository;
@@ -56,38 +72,32 @@ public class SaleService {
      */
     public Sale registerSale(String code, String clientIdNumber, String sellerIdNumber,List<String> productIdentifiers, List<String> accessoryIdentifiers,List<String> extendedWarrantyProductIds) {
 
-        if ((productIdentifiers == null || productIdentifiers.isEmpty())
-                && (accessoryIdentifiers == null || accessoryIdentifiers.isEmpty())) {
-            throw new IllegalArgumentException("La venta debe incluir al menos un producto o accesorio");
-        }
+        SaleValidator.validateSaleHasItems(productIdentifiers, accessoryIdentifiers);
         Client client = clientRepository.findByIdNumber(clientIdNumber);
-        if (client == null) {
-            throw new IllegalArgumentException("Cliente no encontrado: " + clientIdNumber);
-        }
+        PersonValidator.validatePersonExists(client, clientIdNumber, "cliente");
         Seller seller = sellerRepository.findByIdNumber(sellerIdNumber);
-        if (seller == null) {
-            throw new IllegalArgumentException("Vendedor no encontrado: " + sellerIdNumber);
-        }
+        PersonValidator.validatePersonExists(seller, sellerIdNumber, "vendedor");
 
 
         List<Product> products = new ArrayList<>();
         if (productIdentifiers != null) {
             for (String id : productIdentifiers) {
                 Product p = productRepository.findByIdentifier(id);
-                if (p == null) throw new IllegalArgumentException("Producto no encontrado: " + id);
-                if (p.getAvailableQuantity() <= 0) throw new IllegalStateException("Sin stock disponible: " + p.getTitle());
+                ProductValidator.validateProductExists(p, id);
+                ProductValidator.validateStockAvailability(p, 1);
                 products.add(p);
             }
         }
         if (accessoryIdentifiers != null) {
             for (String id : accessoryIdentifiers) {
                 Accessory a = accessoryRepository.findByIdentifier(id);
-                if (a == null) throw new IllegalArgumentException("Producto no encontrado: " + id);
-                if (a.getAvailableQuantity() <= 0) throw new IllegalStateException("Sin stock disponible: " + a.getTitle());
+                ProductValidator.validateProductExists(a, id);
+                ProductValidator.validateStockAvailability(a, 1);
                 products.add(a);
             }
         }
 
+        SaleValidator.validateSaleData(client, seller, products);
         Sale sale = new Sale(code, client, seller, products);
 
         for (Product p : products) {
@@ -106,7 +116,7 @@ public class SaleService {
                     if (p.getIdentifier().equals(id)) { warrantyProduct = p; break; }
                 }
                 if (warrantyProduct == null) {
-                    throw new IllegalArgumentException("Producto no encontrado para garantia extendida: " + id);
+                    throw new ResourceNotFoundException("producto (garantía extendida)", id);
                 }
                 ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
                 warrantyCost += extendedWarranty.getAdditionalCost();
@@ -131,10 +141,21 @@ public class SaleService {
         return sale;
     }
 
+    /**
+     * Busca una venta por su código.
+     *
+     * @param code código de la venta
+     * @return venta encontrada o {@code null} si no existe
+     */
     public Sale findByCode(String code) {
         return saleRepository.findByCode(code);
     }
 
+    /**
+     * Obtiene todas las ventas registradas.
+     *
+     * @return lista de ventas
+     */
     public List<Sale> findAll() {
         return saleRepository.findAll();
     }
@@ -167,6 +188,11 @@ public class SaleService {
         return saleRepository.deleteByCode(code);
     }
     
+    /**
+     * Aplica a la venta la promoción válida que produzca el mayor descuento.
+     *
+     * @param sale venta a la que se aplicará la promoción
+     */
     private void applyBestPromotion(Sale sale) {
         Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
         if (bestPromotion == null) {
