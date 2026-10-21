@@ -2,7 +2,6 @@ package persistence;
 
 import exceptions.PersistenceException;
 import exceptions.InvalidDataException;
-import exceptions.BusinessRuleException;
 
 import model.Seller;
 
@@ -54,16 +53,12 @@ public class SellerRepositoryFile implements SellerRepository {
      *
      * @param seller vendedor que se desea guardar
      * @throws InvalidDataException si el vendedor es nulo
-     * @throws BusinessRuleException si el vendedor ya existe
      * @throws PersistenceException si ocurre un error de escritura
      */
     @Override
     public void save(Seller seller) {
         if (seller == null) {
             throw new InvalidDataException("vendedor", "no puede ser nulo.");
-        }
-        if (findByIdNumber(seller.getIdNumber()) != null) {
-            throw new BusinessRuleException("Ya existe un vendedor con ID: " + seller.getIdNumber());
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
             bw.write(toLine(seller));
