@@ -2,7 +2,6 @@ package persistence;
 
 import exceptions.PersistenceException;
 import exceptions.InvalidDataException;
-import exceptions.BusinessRuleException;
 
 import model.Client;
 
@@ -54,16 +53,12 @@ public class ClientRepositoryFile implements ClientRepository {
      *
      * @param client cliente que se desea guardar
      * @throws InvalidDataException si el cliente es nulo
-     * @throws BusinessRuleException si el cliente ya existe
      * @throws PersistenceException si ocurre un error de escritura
      */
     @Override
     public void save(Client client) {
         if (client == null) {
             throw new InvalidDataException("cliente", "no puede ser nulo.");
-        }
-        if (findByIdNumber(client.getIdNumber()) != null) {
-            throw new BusinessRuleException("Ya existe un cliente con ID: " + client.getIdNumber());
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
             bw.write(toLine(client));
