@@ -12,17 +12,20 @@ import model.Product;
 import model.Sale;
 import model.Seller;
 import model.Accessory;
-import model.Console;
+
 import model.Promotion;
 import persistence.ClientRepository;
-import persistence.ProductRepository;
+
 import persistence.SaleRepository;
 import persistence.SellerRepository;
-import persistence.AccessoryRepository;
+
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import model.ExtendedWarranty;
 
 /**
@@ -38,18 +41,17 @@ public class SaleService {
     private final SaleRepository saleRepository;
     private final ClientRepository clientRepository;
     private final SellerRepository sellerRepository;
-    private final ProductRepository productRepository;
-    private final AccessoryRepository accessoryRepository;
+    private final ProductService productService;
+    private final AccessoryService accessoryService;
     private final PromotionService promotionService;
     private final WarrantyService warrantyService;
     
-    public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,
-                        SellerRepository sellerRepository, ProductRepository productRepository,AccessoryRepository accessoryRepository,PromotionService promotionService,WarrantyService warrantyService) {
+    public SaleService(SaleRepository saleRepository, ClientRepository clientRepository,SellerRepository sellerRepository, ProductService productService,AccessoryService accessoryService, PromotionService promotionService,WarrantyService warrantyService) {
         this.saleRepository = saleRepository;
         this.clientRepository = clientRepository;
         this.sellerRepository = sellerRepository;
-        this.productRepository = productRepository;
-        this.accessoryRepository=accessoryRepository;
+        this.productService= productService;
+        this.accessoryService=accessoryService;
         this.promotionService=promotionService;
          this.warrantyService=warrantyService;
     }
@@ -67,63 +69,23 @@ public class SaleService {
         PersonValidator.validatePersonExists(seller, sellerIdNumber);
 
 
-        List<Product> products = new ArrayList<>();
-        if (productIdentifiers != null) {
-            for (String id : productIdentifiers) {
-                Product p = productRepository.findByIdentifier(id);
-                ProductValidator.validateProductExists(p, id);
-                ProductValidator.validateStockAvailability(p, 1);
-                products.add(p);
-            }
-        }
-        if (accessoryIdentifiers != null) {
-            for (String id : accessoryIdentifiers) {
-                Accessory a = accessoryRepository.findByIdentifier(id);
-                ProductValidator.validateProductExists(a, id);
-                ProductValidator.validateStockAvailability(a, 1);
-                products.add(a);
-            }
-        }
+        List<Product> products = resolveItems(productIdentifiers, accessoryIdentifiers);
+        
 
         SaleValidator.validateSaleData(client, seller, products);
         Sale sale = new Sale(code, client, seller, products);
 
-        for (Product p : products) {
-            if (p instanceof Console) {
-                warrantyService.assignBasicWarranty(p, sale, LocalDate.now());
-            }
-        }
-
+        
+        assignBasicWarranties(sale);
         applyBestPromotion(sale);
 
-        double warrantyCost = 0;
-        if (extendedWarrantyProductIds != null) {
-            for (String id : extendedWarrantyProductIds) {
-                Product warrantyProduct = null;
-                for (Product p : products) {
-                    if (p.getIdentifier().equals(id)) { warrantyProduct = p; break; }
-                }
-                if (warrantyProduct == null) {
-                    throw new ResourceNotFoundException("producto (garantía extendida)", id);
-                }
-                ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
-                warrantyCost += extendedWarranty.getAdditionalCost();
-            }
-        }
-
+        
+        double warrantyCost = assignExtendedWarranties(sale, extendedWarrantyProductIds);
         sale.setWarrantyCost(warrantyCost);
         sale.setTotal(sale.getTotal() + warrantyCost);
 
-        // Recién aquí, con la venta completa ya construida sin errores, se toca el inventario
-        for (Product p : products) {
-            p.setAvailableQuantity(p.getAvailableQuantity() - 1);
-            if (p instanceof Accessory) {
-                accessoryRepository.update((Accessory) p);
-            } else {
-                productRepository.update(p);
-            }
-        }
-
+        
+        updateInventory(products);
         saleRepository.save(sale);
         client.addSale(sale);
         return sale;
@@ -147,20 +109,8 @@ public class SaleService {
         Sale sale = saleRepository.findByCode(code);
         SaleValidator.validateSaleExists(sale, code);
         for (Product p : sale.getProducts()) {
-        if (p instanceof Accessory) {
-            Accessory actualAccessory = accessoryRepository.findByIdentifier(p.getIdentifier());
-            if (actualAccessory != null) {
-                actualAccessory.setAvailableQuantity(actualAccessory.getAvailableQuantity() + 1);
-                accessoryRepository.update(actualAccessory);
-            }
-        } else {
-            Product actual = productRepository.findByIdentifier(p.getIdentifier());
-            if (actual != null) {
-                actual.setAvailableQuantity(actual.getAvailableQuantity() + 1);
-                productRepository.update(actual);
-            }
+            restoreStock(p);
         }
-    }
 
         return saleRepository.deleteByCode(code);
     }
@@ -175,4 +125,92 @@ public class SaleService {
         sale.setDiscountAmount(discount);
         sale.setTotal(sale.getTotal() - discount);
     }
+    
+    private List<Product> resolveItems(List<String> productIdentifiers, List<String> accessoryIdentifiers) {
+        List<Product> products = new ArrayList<>();
+        Map<String, Integer> requested = new HashMap<>();
+        if (productIdentifiers != null) {
+            for (String id : productIdentifiers) {
+                Product p = productService.findByIdentifier(id);   // lanza ResourceNotFoundException si no existe
+                int units = requested.merge("P:" + id, 1, Integer::sum);
+                ProductValidator.validateStockAvailability(p, units);
+                products.add(p);
+            }
+        }
+        if (accessoryIdentifiers != null) {
+            for (String id : accessoryIdentifiers) {
+                Accessory a = accessoryService.findByIdentifier(id);
+                ProductValidator.validateProductExists(a, id);
+                int units = requested.merge("A:" + id, 1, Integer::sum);
+                ProductValidator.validateStockAvailability(a, units);
+                products.add(a);
+            }
+        }
+        return products;
+    }
+
+    private void assignBasicWarranties(Sale sale) {
+        for (Product p : sale.getProducts()) {
+            if (p.requiresBasicWarranty()) {
+                warrantyService.assignBasicWarranty(p, sale, LocalDate.now());
+            }
+        }
+    }
+
+    private double assignExtendedWarranties(Sale sale, List<String> extendedWarrantyProductIds) {
+        double warrantyCost = 0;
+        if (extendedWarrantyProductIds == null) {
+            return warrantyCost;
+        }
+        for (String id : extendedWarrantyProductIds) {
+            Product warrantyProduct = null;
+            for (Product p : sale.getProducts()) {
+                if (p.getIdentifier().equals(id)) { warrantyProduct = p; break; }
+            }
+            if (warrantyProduct == null) {
+                throw new ResourceNotFoundException("producto (garantía extendida)", id);
+            }
+            ExtendedWarranty extendedWarranty = warrantyService.assignExtendedWarranty(warrantyProduct, sale, LocalDate.now());
+            warrantyCost += extendedWarranty.getAdditionalCost();
+        }
+        return warrantyCost;
+    }
+
+    /**
+     * Descuenta del inventario las unidades vendidas. Si un identificador
+     * aparece varias veces en la venta, descuenta todas sus unidades de una
+     * sola vez (cada copia del producto trae el mismo stock inicial, así que
+     * descontar de a una pisaría la escritura anterior).
+     */
+    private void updateInventory(List<Product> products) {
+        Map<String, Integer> units = new LinkedHashMap<>();
+        Map<String, Product> firstOf = new HashMap<>();
+        for (Product p : products) {
+            String key = (p instanceof Accessory ? "A:" : "P:") + p.getIdentifier();
+            units.merge(key, 1, Integer::sum);
+            firstOf.putIfAbsent(key, p);
+        }
+        for (Map.Entry<String, Integer> e : units.entrySet()) {
+            Product p = firstOf.get(e.getKey());
+            int newStock = p.getAvailableQuantity() - e.getValue();
+            if (p instanceof Accessory) {
+                accessoryService.updateStock(p.getIdentifier(), newStock);
+            } else {
+                productService.updateStock(p.getIdentifier(), newStock);
+            }
+        }
+    }
+
+    private void restoreStock(Product p) {
+        if (p instanceof Accessory) {
+            accessoryService.restoreStock(p.getIdentifier(), 1);   // devuelve false si no existe
+        } else {
+            try {
+                productService.restoreStock(p.getIdentifier(), 1);
+            } catch (ResourceNotFoundException e) {
+                // el producto fue eliminado del catálogo: no hay stock que restaurar
+            }
+        }
+    }
+    
 }
