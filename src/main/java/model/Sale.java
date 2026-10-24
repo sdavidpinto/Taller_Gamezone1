@@ -23,7 +23,7 @@ public class Sale {
     private final Client client;
     private final Seller seller;
     private List<Product> products=new ArrayList<>();
-    double total;
+    private double total;
     private String appliedPromotionName;
     private double discountAmount;
     private double warrantyCost;
