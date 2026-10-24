@@ -60,4 +60,11 @@ public class Console extends Product {
         return String.format("%s [Console] - Brand: %s | Model: %s | Generation: %s | Price: $%.2f | Stock: %d",
                 getTitle(), brand, model, generation, getPrice(), getAvailableQuantity());
     }
+    
+    /** Las consolas siempre se venden con garantía básica. */
+    @Override
+    public boolean requiresBasicWarranty() {
+        return true;
+    }
+    
 }

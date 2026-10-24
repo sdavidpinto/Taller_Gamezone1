@@ -91,7 +91,7 @@ public class Return {
     }
     
     private double resolveDiscountRatio() {
-        double subtotal = originalSale.getTotal() + originalSale.getDiscountAmount() - originalSale.getWarrantyCost();
+        double subtotal = originalSale.getSubtotal();
         if (subtotal <= 0) {
             return 0;
         }
