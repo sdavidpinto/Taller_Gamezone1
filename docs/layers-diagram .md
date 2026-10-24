@@ -13,6 +13,25 @@ classDiagram
     namespace UI_Layer {
         class MenuUI {
         }
+        class SubMenu {
+            <<abstract>>
+        }
+        class ClientMenu {
+        }
+        class SellerMenu {
+        }
+        class ProductMenu {
+        }
+        class SaleMenu {
+        }
+        class AccessoryMenu {
+        }
+        class PromotionMenu {
+        }
+        class WarrantyMenu {
+        }
+        class ReturnMenu {
+        }
     }
 
     namespace Service_Layer {
@@ -60,6 +79,32 @@ classDiagram
         class ReturnRepository {
             <<Interface>>
             <<Nueva funcionalidad>>
+        }
+    }
+
+    namespace Validation_Layer {
+        class PersonValidator {
+            <<Utility>>
+        }
+        class ProductValidator {
+            <<Utility>>
+        }
+        class SaleValidator {
+            <<Utility>>
+        }
+    }
+
+    namespace Exception_Layer {
+        class GameZoneException {
+            <<abstract>>
+        }
+        class BusinessRuleException {
+        }
+        class InvalidDataException {
+        }
+        class PersistenceException {
+        }
+        class ResourceNotFoundException {
         }
     }
 
@@ -121,6 +166,15 @@ classDiagram
     %%      ProductService).
     %% A7 - ReturnService ahora usa WarrantyService para anular las garantías
     %%      de una consola devuelta al momento de registrar la devolución.
+    %% Refactor GRASP (Requerimiento 7):
+    %% V-02 - SaleService deja de depender de ProductRepository y
+    %%        AccessoryRepository: delega el stock en ProductService y
+    %%        AccessoryService.
+    %% V-06 - MenuUI solo conoce SubMenu y sus 8 submenús; cada submenú
+    %%        depende únicamente de los services que necesita.
+    %% Validation_Layer y Exception_Layer se agregan como capas
+    %% transversales: los services usan los validadores y los validadores
+    %% lanzan las excepciones (todas heredan de GameZoneException).
     %% A1, A2, A3, A5, A6 no agregan ni quitan dependencias entre capas:
     %% son ajustes de validación, resolución interna, orden de cálculo y
     %% nuevos métodos dentro de clases que ya existían en este diagrama.
@@ -134,11 +188,34 @@ classDiagram
     MenuUI ..> PromotionService : uses
     MenuUI ..> WarrantyService : uses
     MenuUI ..> ReturnService : uses
+    MenuUI ..> ClientMenu : uses
+    MenuUI ..> SellerMenu : uses
+    MenuUI ..> ProductMenu : uses
+    MenuUI ..> SaleMenu : uses
+    MenuUI ..> AccessoryMenu : uses
+    MenuUI ..> PromotionMenu : uses
+    MenuUI ..> WarrantyMenu : uses
+    MenuUI ..> ReturnMenu : uses
+
+    ClientMenu ..> ClientService : uses
+    ClientMenu ..> SaleService : uses
+    SellerMenu ..> SellerService : uses
+    SellerMenu ..> SaleService : uses
+    ProductMenu ..> ProductService : uses
+    SaleMenu ..> ClientService : uses
+    SaleMenu ..> SellerService : uses
+    SaleMenu ..> SaleService : uses
+    AccessoryMenu ..> ProductService : uses
+    AccessoryMenu ..> AccessoryService : uses
+    PromotionMenu ..> PromotionService : uses
+    WarrantyMenu ..> WarrantyService : uses
+    ReturnMenu ..> SaleService : uses
+    ReturnMenu ..> ReturnService : uses
 
     SaleService ..> ClientRepository : uses
     SaleService ..> SellerRepository : uses
-    SaleService ..> ProductRepository : uses
-    SaleService ..> AccessoryRepository : uses
+    SaleService ..> ProductService : uses
+    SaleService ..> AccessoryService : uses
     SaleService ..> SaleRepository : uses
     SaleService ..> PromotionService : uses
     SaleService ..> WarrantyService : uses
@@ -176,6 +253,30 @@ classDiagram
     ReturnService ..> Sale : uses
     ReturnService ..> Product : uses
 
+    ClientService ..> PersonValidator : uses
+    SellerService ..> PersonValidator : uses
+    ProductService ..> ProductValidator : uses
+    ProductService ..> InvalidDataException : uses
+    SaleService ..> PersonValidator : uses
+    SaleService ..> ProductValidator : uses
+    SaleService ..> SaleValidator : uses
+    SaleService ..> ResourceNotFoundException : uses
+
+    PersonValidator ..> BusinessRuleException : throws
+    PersonValidator ..> InvalidDataException : throws
+    PersonValidator ..> ResourceNotFoundException : throws
+    ProductValidator ..> BusinessRuleException : throws
+    ProductValidator ..> InvalidDataException : throws
+    ProductValidator ..> ResourceNotFoundException : throws
+    SaleValidator ..> BusinessRuleException : throws
+    SaleValidator ..> InvalidDataException : throws
+    SaleValidator ..> ResourceNotFoundException : throws
+    PersonValidator ..> Person : uses
+    ProductValidator ..> Product : uses
+    SaleValidator ..> Sale : uses
+    SaleValidator ..> Client : uses
+    SaleValidator ..> Seller : uses
+
     SaleRepository ..> Sale : uses
     ProductRepository ..> Product : uses
     ClientRepository ..> Client : uses
@@ -194,4 +295,16 @@ classDiagram
     Promotion <|-- BulkPurchaseDiscount
     Warranty <|-- BasicWarranty
     Warranty <|-- ExtendedWarranty
+    SubMenu <|-- ClientMenu
+    SubMenu <|-- SellerMenu
+    SubMenu <|-- ProductMenu
+    SubMenu <|-- SaleMenu
+    SubMenu <|-- AccessoryMenu
+    SubMenu <|-- PromotionMenu
+    SubMenu <|-- WarrantyMenu
+    SubMenu <|-- ReturnMenu
+    GameZoneException <|-- BusinessRuleException
+    GameZoneException <|-- InvalidDataException
+    GameZoneException <|-- PersistenceException
+    GameZoneException <|-- ResourceNotFoundException
 ```

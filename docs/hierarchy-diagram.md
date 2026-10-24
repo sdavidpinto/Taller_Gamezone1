@@ -66,10 +66,71 @@ classDiagram
     Warranty <|-- BasicWarranty
     Warranty <|-- ExtendedWarranty
 
+    %% UI Hierarchy
+    class SubMenu {
+        <<abstract>>
+    }
+    class ClientMenu {
+    }
+    class SellerMenu {
+    }
+    class ProductMenu {
+    }
+    class SaleMenu {
+    }
+    class AccessoryMenu {
+    }
+    class PromotionMenu {
+    }
+    class WarrantyMenu {
+    }
+    class ReturnMenu {
+    }
+
+    SubMenu <|-- ClientMenu
+    SubMenu <|-- SellerMenu
+    SubMenu <|-- ProductMenu
+    SubMenu <|-- SaleMenu
+    SubMenu <|-- AccessoryMenu
+    SubMenu <|-- PromotionMenu
+    SubMenu <|-- WarrantyMenu
+    SubMenu <|-- ReturnMenu
+
+    %% Exception Hierarchy
+    class RuntimeException {
+        <<Java>>
+    }
+    class GameZoneException {
+        <<abstract>>
+    }
+    class BusinessRuleException {
+    }
+    class InvalidDataException {
+    }
+    class PersistenceException {
+    }
+    class ResourceNotFoundException {
+    }
+
+    RuntimeException <|-- GameZoneException
+    GameZoneException <|-- BusinessRuleException
+    GameZoneException <|-- InvalidDataException
+    GameZoneException <|-- PersistenceException
+    GameZoneException <|-- ResourceNotFoundException
+
     %% Nota: Return (model) es una clase nueva de la funcionalidad de
     %% devoluciones, pero no participa de ninguna jerarquía de herencia:
     %% es una clase concreta e independiente que solo se asocia con
     %% Sale y Product (ver class-diagram.md y layers-diagram.md).
+    %%
+    %% Nota (Requerimiento 7, refactor GRASP): Product declara
+    %% requiresBasicWarranty() (por defecto false) y Console lo sobrescribe
+    %% (true). No hay clases ni herencias nuevas en el modelo: es solo un
+    %% método polimórfico que reemplaza el instanceof Console de SaleService.
+    %% Las jerarquías nuevas son de interfaz (SubMenu y sus 8 submenús, que
+    %% parten MenuUI) y de excepciones (GameZoneException y sus 4 subclases).
+    %% Las clases de validation (PersonValidator, ProductValidator,
+    %% SaleValidator) son utilitarias estáticas y no participan de herencia.
     %%
     %% Nota (Requerimiento 5, ajuste A1): CategoryDiscount ahora también
     %% acepta "ACCESSORY" como categoría objetivo, además de "VIDEOGAME" y
