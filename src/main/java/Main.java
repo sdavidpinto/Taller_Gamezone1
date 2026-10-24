@@ -61,8 +61,8 @@ public class Main {
         AccessoryService accesoryService = new AccessoryService(accessoryRepository);
         PromotionService promotionService = new PromotionService(promotionRepository);
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleRepository, productService);
-        SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productRepository, accessoryRepository, promotionService, warrantyService);
-        ReturnRepository returnRepository = new ReturnRepositoryFile(dataFile("returns.csv"), saleService, productService, accesoryService);
+        SaleService saleService = new SaleService(saleRepository, clientRepository, sellerRepository, productService, accesoryService, promotionService, warrantyService);
+        ReturnRepository returnRepository = new ReturnRepositoryFile(dataFile("returns.csv"),saleService::findByCode, productService::findByIdentifier, accesoryService::findByIdentifier);
         ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accesoryService, warrantyService);
 
         // --- Capa ui: recibe los services por constructor ---

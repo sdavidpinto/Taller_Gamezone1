@@ -95,7 +95,7 @@ public class SaleRepositoryFile implements SaleRepository {
             throw new BusinessRuleException("Ya existe una venta con el código: " + sale.getCode());
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
-            bw.write(sale.Display());
+            bw.write(toBlock(sale));;
             bw.newLine();
             bw.write(SEPARADOR);
             bw.newLine();
@@ -203,7 +203,7 @@ public class SaleRepositoryFile implements SaleRepository {
     private void rewriteFile(List<Sale> ventas) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, false))) {
             for (Sale venta : ventas) {
-                bw.write(venta.Display());
+               bw.write(toBlock(venta));
                 bw.newLine();
                 bw.write(SEPARADOR);
                 bw.newLine();
@@ -324,4 +324,34 @@ public class SaleRepositoryFile implements SaleRepository {
     }
     return accessoryResolver.apply(identifier);
 }
+  
+  
+  
+  private String toBlock(Sale sale) {
+    StringBuilder productos = new StringBuilder();
+    for (Product product : sale.getProducts()) {
+        productos.append("  - [").append(product.getIdentifier()).append("] ")
+                 .append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
+    }
+
+    StringBuilder bloque = new StringBuilder();
+    bloque.append("code: ").append(sale.getCode()).append("\n")
+          .append("Sale date: ").append(sale.getDate()).append("\n")
+          .append("Client: ").append(sale.getClient().getIdNumber()).append("\n")
+          .append("Seller: ").append(sale.getSeller().getIdNumber()).append("\n")
+          .append("Products:\n").append(productos)
+          .append("Subtotal: $").append(sale.getSubtotal()).append("\n");
+
+    String promotion = sale.getAppliedPromotionName();
+    if (promotion != null && !promotion.isEmpty()) {
+        bloque.append("Promotion applied: ").append(promotion).append("\n")
+              .append("Discount: -$").append(sale.getDiscountAmount()).append("\n");
+    }
+    if (sale.getWarrantyCost() > 0) {
+        bloque.append("Warranty cost: $").append(sale.getWarrantyCost()).append("\n");
+    }
+    bloque.append("Total: $").append(sale.getTotal());
+    return bloque.toString();
+}
+  
     }
