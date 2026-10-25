@@ -80,11 +80,4 @@ public abstract class Product {
     public boolean requiresBasicWarranty() {
         return false;
     }
-
-    /**
-     * Muestra la descripción del producto directamente en la consola.
-     */
-    public void mostrar() {
-        System.out.println(getDescription());
-    }
 }
