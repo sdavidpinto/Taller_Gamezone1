@@ -156,3 +156,112 @@ Ver V-05.
 ## 7. Corrección a mi revisión preliminar anterior
 
 `SaleRepositoryFile` ya no reconstruye todos los productos como `SimpleProduct`. `parseBlock` primero resuelve el producto o accesorio real por identificador (líneas 262-265) y usa `SimpleProduct` solo como respaldo (líneas 266-270). La preocupación anterior por identificadores incorrectos al recargar quedó, en su mayor parte, resuelta.
+
+
+# Auditoría SOLID – Líder Técnico (Samuel David Pinto Ortiz)
+
+**Requerimiento 8 – Auditoría y Corrección SOLID · Fase 1**
+**Rama:** `feature/solid-audit` · **Archivo:** `docs/solid-audit/leader-audit.md`
+**Estado auditado:** `develop` con la corrección GRASP del Requerimiento 7 integrada (commit `3372884`, merge del PR #51).
+
+## Criterio de la auditoría
+
+Una violación se registra solo cuando existe un escenario concreto de cambio que obliga a editar código que ya funciona y ese cambio es previsible. Esta versión del sistema es la **entrega final**: no se agregarán módulos, tipos de producto, promociones ni implementaciones alternativas de servicios o repositorios. Por esa razón los principios que protegen frente al cambio futuro (OCP, ISP, DIP) y la separación de responsabilidades que solo se paga al evolucionar (SRP) no producen violaciones que justifiquen modificar código estable. Las observaciones de diseño se dejan documentadas en la sección 5, sin registrarlas como violaciones.
+
+---
+
+## 1. Alcance
+
+| Módulo / requerimiento | Clases y métodos auditados |
+|---|---|
+| Ventas, interfaz y arranque (Taller 1) | `Sale`, `SaleRepository`, `SaleRepositoryFile`, `SaleService`, `MenuUI`, `Main` |
+| Accesorios (Req. 1) | Integración en `SaleService` (`resolveItems`, `updateInventory`, `restoreStock`) y conexión en `MenuUI`/`AccessoryMenu` |
+| Promociones (Req. 2) | `SaleService.applyBestPromotion`, `Sale` (`appliedPromotionName`, `discountAmount`, `Display`), conexión en `MenuUI` |
+| Devoluciones (Req. 3) | `ProductService.restoreStock`, conexión en `MenuUI`/`ReturnMenu` |
+| Garantías (Req. 4) | `SaleService.assignBasicWarranties`, `assignExtendedWarranties`, `Sale.warrantyCost`, conexión en `MenuUI` |
+| Excepciones y validaciones (Req. 6) | Manejo de excepciones en `SaleMenu` y en los demás submenús creados por el líder |
+| Corrección GRASP (Req. 7) | `SubMenu`, `ClientMenu`, `SellerMenu`, `ProductMenu`, `SaleMenu`, `AccessoryMenu`, `PromotionMenu`, `WarrantyMenu`, `ReturnMenu`, `Sale.getSubtotal`, `Product.requiresBasicWarranty`, `Console.requiresBasicWarranty`, métodos privados extraídos de `SaleService.registerSale` |
+
+El código de los demás integrantes **no** se audita aquí.
+
+---
+
+## 2. Veredicto por principio (código del líder)
+
+| Principio | Veredicto | Hallazgos |
+|---|---|---|
+| SRP | Sin violaciones registradas | – |
+| OCP | Sin violaciones registradas | – |
+| LSP | **Correcto** | – |
+| ISP | Sin violaciones registradas | – |
+| DIP | **Correcto** | – |
+
+---
+
+## 3. Auditoría por principio
+
+### 3.1 Responsabilidad Única (SRP) – Sin violaciones registradas
+
+- **Dónde se cumple:** cada submenú atiende un solo módulo (`ClientMenu`, `SellerMenu`, `ProductMenu`, `SaleMenu`, `AccessoryMenu`, `PromotionMenu`, `WarrantyMenu`, `ReturnMenu`); `MenuUI` solo enruta el menú principal; `SubMenu` concentra las ayudas de entrada; `Main` solo conecta las piezas; `SaleService` descompone `registerSale` en métodos privados con un propósito cada uno (`resolveItems`, `assignBasicWarranties`, `applyBestPromotion`, `assignExtendedWarranties`, `updateInventory`); `ProductService.restoreStock` tiene un solo propósito.
+- **Por qué no se registran violaciones:** las razones de cambio que pueden separar más a `Sale` (formato del recibo) y a `SaleService` (inventario) solo se materializarían si el sistema siguiera evolucionando. En la entrega final no existe un cambio previsible que las active. Ver observaciones O-01 y O-02.
+
+### 3.2 Abierto/Cerrado (OCP) – Sin violaciones registradas
+
+- **Dónde se cumple:** `Product.requiresBasicWarranty()` con la sobrescritura en `Console` (el polimorfismo de GRASP reemplazó una verificación de tipo, de modo que un producto nuevo con garantía básica no exige cambios en `SaleService.assignBasicWarranties`); `Promotion.calculateDiscount` se usa de forma polimórfica en `SaleService.applyBestPromotion`.
+- **Por qué no se registran violaciones:** las verificaciones `instanceof Accessory` de `SaleService` y el `switch` de `MenuUI` solo obligarían a editar código si se agregaran nuevos tipos de ítem o nuevos módulos, y el sistema se entrega cerrado con los existentes. Ver observaciones O-03 y O-04.
+
+### 3.3 Sustitución de Liskov (LSP) – **Correcto**
+
+- Cada subclase de `SubMenu` implementa `show()` y `MenuUI` la usa por el tipo base sin condiciones.
+- `Console.requiresBasicWarranty()` no endurece el contrato y devuelve un booleano válido; `SaleService` trata cualquier `Product` igual.
+- `SaleRepositoryFile` respeta el contrato de `SaleRepository` (`save` falla con duplicados, `findByCode` devuelve `null` si no existe, `deleteByCode` devuelve un booleano).
+- Observación: la clase privada `SaleRepositoryFile.SimpleProduct` usa el título como identificador (líneas 269 y 299-312). Se registra como defecto funcional D-03 porque corregirla cambia lo que se escribe en `sales.txt`.
+
+### 3.4 Segregación de Interfaces (ISP) – Sin violaciones registradas
+
+- **Dónde se cumple:** los menús reciben solo los servicios que usan (por ejemplo `ReturnMenu` recibe `SaleService` y `ReturnService`); `SaleService` usa tres de las cinco operaciones de `SaleRepository`.
+- **Por qué no se registran violaciones:** `SaleRepository` declara `update`, que ningún cliente usa, y `WarrantyService` recibe la interfaz completa solo para `findByCode`. Dividirla afectaría código del Desarrollador 2 y no aporta nada a un sistema que no tendrá nuevos clientes ni implementaciones. Ver observación O-05.
+
+### 3.5 Inversión de Dependencias (DIP) – **Correcto**
+
+- **Dónde se cumple:** `SaleService` depende de las interfaces `SaleRepository`, `ClientRepository` y `SellerRepository` y las recibe por constructor; `SaleRepositoryFile` recibe sus colaboradores como funciones (`Function`); `Main` es el único lugar que instancia repositorios, servicios y menús concretos (raíz de composición).
+- **Dependencias de servicios concretos (aceptadas):** `SaleService` usa `ProductService`, `AccessoryService`, `PromotionService` y `WarrantyService`, y `MenuUI` crea los submenús. Los servicios y menús no tendrán implementaciones alternativas, y la dependencia `ui → service → persistence → model` es la arquitectura por capas del curso.
+
+---
+
+## 4. Tabla de cobertura (líder)
+
+| Clase / método | Auditado por |
+|---|---|
+| `Sale`, `SaleRepository`, `SaleRepositoryFile`, `SaleService` | Líder |
+| `MenuUI`, `SubMenu`, `ClientMenu`, `SellerMenu`, `ProductMenu`, `SaleMenu`, `AccessoryMenu`, `PromotionMenu`, `WarrantyMenu`, `ReturnMenu` | Líder |
+| `Main` | Líder |
+| `ProductService.restoreStock`, `Product.requiresBasicWarranty`, `Console.requiresBasicWarranty` | Líder |
+
+---
+
+## 5. Observaciones de diseño (no son violaciones; no se modifica código)
+
+| ID | Dónde | Observación |
+|---|---|---|
+| O-01 | `Sale.Display()` (líneas 135-163) | La clase de dominio arma el texto del recibo que muestran `SaleMenu`, `ClientMenu` y `SellerMenu`; `SaleRepositoryFile.toBlock` mantiene un formato parecido. Cambiar el recibo exigiría editar `Sale`. |
+| O-02 | `SaleService.resolveItems`, `updateInventory`, `restoreStock` (129-214) | `SaleService` conoce además cómo se valida, descuenta y restaura el stock de productos y accesorios. |
+| O-03 | `SaleService` líneas 189, 196 y 205 | Verificaciones `instanceof Accessory` y dos listas paralelas de identificadores en `registerSale`. |
+| O-04 | `MenuUI` | Campos fijos, constructor, texto y `switch` deben editarse para agregar un menú. |
+| O-05 | `SaleRepository` | Incluye `update`, que ningún cliente usa; `WarrantyService` recibe la interfaz completa para usar solo `findByCode`. |
+
+Estas observaciones quedan como referencia por si el sistema se extiende en el futuro.
+
+---
+
+## 6. Hallazgos de frontera
+
+Ninguno.
+
+---
+
+## 7. Defectos funcionales fuera de alcance (no se corrigen en este requerimiento)
+
+- **D-01 – Los menús no atrapan las excepciones del dominio.** `SaleMenu.registerSale` atrapa `IllegalArgumentException | IllegalStateException`, pero `BusinessRuleException` (stock insuficiente, código duplicado) y `ResourceNotFoundException` (producto inexistente) extienden `GameZoneException`, una `RuntimeException`. Salen del menú sin ser atrapadas. El mismo patrón `catch (IllegalArgumentException)` aparece en `ClientMenu`, `SellerMenu`, `ProductMenu`, `AccessoryMenu`, `PromotionMenu` y `ReturnMenu`. Hallado leyendo el código; la aplicación no se ejecutó.
+- **D-02 – Verificaciones de `null` que nunca se cumplen.** `SaleService.findByCode` lanza `ResourceNotFoundException` en vez de devolver `null`, por lo que `SaleMenu.searchSale` (`s != null ? … : "No se encontró la venta."`), `SaleMenu.cancelSale` (`ok ? … : "No se encontró la venta."`) y el ciclo `findByCode(saleId) == null` de `ReturnMenu.registerReturn` nunca llegan a su rama de "no encontrado".
+- **D-03 – `SimpleProduct` usa el título como identificador.** En `SaleRepositoryFile.parseBlock`, cuando un producto ya no existe en el catálogo, `new SimpleProduct(titulo, precio)` guarda el título como identificador. Tras cualquier `update` o `deleteByCode`, `rewriteFile` escribe `[título]` en lugar de `[identificador]` para esa venta, alterando el archivo almacenado.
