@@ -8,6 +8,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import services.SaleService;
 import services.ReturnService;
+import exceptions.GameZoneException;
+import exceptions.ResourceNotFoundException;
+
 
 /**
  * Submenú de devoluciones. Recibe solo los servicios que necesita.
@@ -47,14 +50,18 @@ public class ReturnMenu extends SubMenu {
 
     private void registerReturn() {
         String saleId;
+        boolean SaleExist = false;
         do {
             saleId = askRequiredText("Código de la venta original:");
             if (saleId == null) return;
-            if (saleService.findByCode(saleId) == null) {
+            try {
+                saleService.findByCode(saleId);
+                SaleExist = true;
+            } catch (ResourceNotFoundException e) {
                 JOptionPane.showMessageDialog(null, "No existe una venta con ese código.\nIntenta con otro.", "Dato inválido", JOptionPane.WARNING_MESSAGE);
             }
-        } while (saleService.findByCode(saleId) == null);
-
+        } while (!SaleExist);
+        
         String reason = askRequiredText("Motivo de la devolución:");
         if (reason == null) return;
 
