@@ -63,13 +63,6 @@ public abstract class Accessory extends Product{
      */
     public abstract String getDescription();
 
-    /**
-     * Muestra la descripción del producto directamente en la consola.
-     */
-    public void mostrar() {
-        System.out.println(getDescription());
-    }
-
     public String getBrand() {
         return brand;
     }

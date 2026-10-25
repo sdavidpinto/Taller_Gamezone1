@@ -1,89 +1,82 @@
 package services;
 
+import validation.PersonValidator;
 import model.Client;
 import persistence.ClientRepository;
-
 import java.util.List;
 
 /**
- * Capa de servicios para Client. Recibe la interfaz ClientRepository
- * por inyección de dependencias (constructor), nunca crea su propia
- * implementación concreta.
+ * Gestiona las operaciones relacionadas con los clientes.
+ * Utiliza {@link ClientRepository} mediante inyección de dependencias.
  */
 public class ClientService {
 
     private final ClientRepository clientRepository;
 
+    /**
+     * Crea el servicio de clientes.
+     *
+     * @param clientRepository repositorio utilizado para gestionar los clientes
+     */
     public ClientService(ClientRepository clientRepository) {
         this.clientRepository = clientRepository;
     }
 
     /**
-     * Valida que un campo obligatorio no venga nulo ni vacío/en blanco.
-     */
-    private void requireNonBlank(String value, String fieldName) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("El campo " + fieldName + " es obligatorio.");
-        }
-    }
-
-    /**
-     * Registers a new client after validating that all required fields
-     * are present and that no other client is already registered with
-     * the same identification number.
+     * Registra un cliente después de validar sus datos y verificar que su
+     * número de identificación no esté registrado.
      *
-     * @param name the full name of the client
-     * @param idNumber the identification number of the client
-     * @param phone the contact phone number of the client
-     * @param email the email address of the client
-     * @throws IllegalArgumentException if any field is missing/blank,
-     *         or if a client with the same idNumber already exists
+     * @param name nombre completo del cliente
+     * @param idNumber número de identificación del cliente
+     * @param phone teléfono de contacto del cliente
+     * @param email correo electrónico del cliente
+     * @throws exceptions.InvalidDataException si algún dato es inválido
+     * @throws exceptions.BusinessRuleException si el cliente ya existe
      */
     public void registerClient(String name, String idNumber, String phone, String email) {
-        requireNonBlank(name, "nombre");
-        requireNonBlank(idNumber, "identificación");
-        requireNonBlank(phone, "teléfono");
-        requireNonBlank(email, "email");
-        if (clientRepository.findByIdNumber(idNumber) != null) {
-            throw new IllegalArgumentException("Ya existe un cliente con ID: " + idNumber);
-        }
+        PersonValidator.validatePersonData(idNumber, name, email, phone);
+        PersonValidator.validateUniquePerson(clientRepository.findAll(), idNumber);
         Client client = new Client(name, idNumber, phone, email);
         clientRepository.save(client);
     }
 
     /**
-     * Finds a client by their identification number.
+     * Busca un cliente por su número de identificación.
      *
-     * @param idNumber the identification number to search for
-     * @return the client with the given ID, or null if not found
+     * @param idNumber número de identificación que se desea buscar
+     * @return cliente encontrado
+     * @throws exceptions.ResourceNotFoundException si el cliente no existe
      */
     public Client findByIdNumber(String idNumber) {
-        return clientRepository.findByIdNumber(idNumber);
+        Client client = clientRepository.findByIdNumber(idNumber);
+        PersonValidator.validatePersonExists(client, idNumber);
+        return client;
     }
 
     /**
-     * Returns all registered clients.
+     * Obtiene todos los clientes registrados.
      *
-     * @return a list containing all clients
+     * @return lista de clientes registrados
      */
     public List<Client> findAll() {
         return clientRepository.findAll();
     }
 
     /**
-     * Updates the information of an existing client.
+     * Actualiza los datos de un cliente existente.
      *
-     * @param idNumber the identification number of the client to update
-     * @param newName the new name of the client
-     * @param newPhone the new phone number of the client
-     * @param newEmail the new email address of the client
-     * @return true if the client was found and updated, false otherwise
+     * @param idNumber número de identificación del cliente
+     * @param newName nuevo nombre del cliente
+     * @param newPhone nuevo teléfono del cliente
+     * @param newEmail nuevo correo electrónico del cliente
+     * @return {@code true} si el cliente fue actualizado
+     * @throws exceptions.ResourceNotFoundException si el cliente no existe
+     * @throws exceptions.InvalidDataException si algún dato es inválido
      */
     public boolean updateClient(String idNumber, String newName, String newPhone, String newEmail) {
         Client existingClient = clientRepository.findByIdNumber(idNumber);
-        if (existingClient == null) {
-            return false;
-        }
+        PersonValidator.validatePersonExists(existingClient, idNumber);
+        PersonValidator.validatePersonData(idNumber, newName, newEmail, newPhone);
         existingClient.setName(newName);
         existingClient.setPhone(newPhone);
         existingClient.setEmail(newEmail);
@@ -91,12 +84,15 @@ public class ClientService {
     }
 
     /**
-     * Deletes a client by their identification number.
+     * Elimina un cliente por su número de identificación.
      *
-     * @param idNumber the identification number of the client to delete
-     * @return true if the client was found and deleted, false otherwise
+     * @param idNumber número de identificación del cliente
+     * @return {@code true} si el cliente fue eliminado
+     * @throws exceptions.ResourceNotFoundException si el cliente no existe
      */
     public boolean deleteClient(String idNumber) {
+        Client client = clientRepository.findByIdNumber(idNumber);
+        PersonValidator.validatePersonExists(client, idNumber);
         return clientRepository.deleteByIdNumber(idNumber);
     }
 }

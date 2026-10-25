@@ -23,7 +23,7 @@ public class Sale {
     private final Client client;
     private final Seller seller;
     private List<Product> products=new ArrayList<>();
-    double total;
+    private double total;
     private String appliedPromotionName;
     private double discountAmount;
     private double warrantyCost;
@@ -138,7 +138,7 @@ public String Display() {
         productosStr.append("  - [").append(product.getIdentifier()).append("] ").append(product.getTitle()).append(" ($").append(product.getPrice()).append(")\n");
     }
 
-    double subtotal = total + discountAmount - warrantyCost;
+    double subtotal = getSubtotal();;
 
     StringBuilder resultado = new StringBuilder();
     resultado.append("code: ").append(code).append("\n")
@@ -170,7 +170,15 @@ public String Display() {
         this.warrantyCost = warrantyCost;
     }
 
-    
-    
+
+    /**
++     * Subtotal de la venta: lo que valían los productos después de aplicar
++     * garantías, pero antes de descontar la promoción. Es un valor derivado
++     * (no se almacena), por lo que siempre es consistente con total,
++     * discountAmount y warrantyCost.
++     */
+    public double getSubtotal() {
+        return total + discountAmount - warrantyCost;
+    }    
     
 }

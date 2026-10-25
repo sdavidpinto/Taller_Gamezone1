@@ -1,47 +1,46 @@
 package persistence;
 
+import model.Accessory;
 import model.Product;
 import model.Return;
 import model.Sale;
-import services.AccessoryService;
-import services.ProductService;
-import services.SaleService;
 
 import java.io.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
- * Implementación de ReturnRepository basada en archivos.
- * Guarda y recupera devoluciones desde un archivo CSV. Como una devolución
- * referencia una venta y una lista de ítems (productos o accesorios), esta
- * clase depende de SaleService, ProductService y AccessoryService para
- * resolver esas referencias al reconstruir devoluciones desde el archivo.
+ * File-based implementation of ReturnRepository. It stores returns in a CSV file.
+ * A return references a sale and a list of items (products or accessories), so
+ * the repository receives resolver functions to rebuild those references when
+ * loading. It does not depend on the service layer.
  */
 public class ReturnRepositoryFile implements ReturnRepository {
 
     private static final String PRODUCT_ID_SEPARATOR = ";";
 
     private final String filePath;
-    private final SaleService saleService;
-    private final ProductService productService;
-    private final AccessoryService accessoryService;
+    private final Function<String, Sale> saleResolver;
+    private final Function<String, Product> productResolver;
+    private final Function<String, Accessory> accessoryResolver;
 
     /**
-     * Crea un nuevo ReturnRepositoryFile.
+     * Creates a new ReturnRepositoryFile.
      *
-     * @param filePath la ruta del archivo CSV usado para persistencia
-     * @param saleService usado para resolver referencias a ventas por código
-     * @param productService usado para resolver referencias a productos por identificador
-     * @param accessoryService usado para resolver referencias a accesorios por identificador
+     * @param filePath path of the CSV file used for persistence
+     * @param saleResolver finds a sale by its code
+     * @param productResolver finds a product by its identifier
+     * @param accessoryResolver finds an accessory by its identifier
      */
-    public ReturnRepositoryFile(String filePath, SaleService saleService,
-                                 ProductService productService, AccessoryService accessoryService) {
+    public ReturnRepositoryFile(String filePath, Function<String, Sale> saleResolver,
+                                Function<String, Product> productResolver,
+                                Function<String, Accessory> accessoryResolver) {
         this.filePath = filePath;
-        this.saleService = saleService;
-        this.productService = productService;
-        this.accessoryService = accessoryService;
+        this.saleResolver = saleResolver;
+        this.productResolver = productResolver;
+        this.accessoryResolver = accessoryResolver;
         createFileIfNotExists();
     }
 
@@ -137,14 +136,13 @@ public class ReturnRepositoryFile implements ReturnRepository {
     }
 
     /**
-     * Reconstruye un objeto Return a partir de una línea CSV, resolviendo
-     * la venta asociada mediante SaleService y cada ítem devuelto mediante
-     * resolveItem (que revisa productos y accesorios). Si la venta o algún
-     * ítem no pueden resolverse, la línea se omite y se retorna null.
+     * Rebuilds a Return from a CSV line, resolving the sale through the sale
+     * resolver and each returned item through resolveItem (products first, then
+     * accessories). If the sale or any item cannot be resolved the line is
+     * skipped and null is returned.
      *
-     * @param line la línea CSV a interpretar
-     * @return la devolución reconstruida, o null si la venta o algún ítem
-     *         referenciados en la línea no pudieron resolverse
+     * @param line the CSV line to parse
+     * @return the rebuilt return, or null if the sale or an item could not be resolved
      */
     private Return parseLine(String line) {
         String[] parts = line.split(",", -1);
@@ -154,7 +152,7 @@ public class ReturnRepositoryFile implements ReturnRepository {
         String productIdsField = parts[3];
         String reason = parts[4];
 
-        Sale sale = saleService.findByCode(saleCode);
+        Sale sale = saleResolver.apply(saleCode);
         if (sale == null) {
             return null;
         }
@@ -178,18 +176,16 @@ public class ReturnRepositoryFile implements ReturnRepository {
     }
 
     /**
-     * Resuelve un identificador de ítem como Product o como Accessory,
-     * revisando primero ProductService y, si no lo encuentra, buscando
-     * en AccessoryService.
+     * Resolves an item identifier as a Product or, if not found, as an Accessory.
      *
-     * @param itemId el identificador a resolver
-     * @return el Product o Accessory encontrado, o null si no existe en ninguno
+     * @param itemId the identifier to resolve
+     * @return the Product or Accessory found, or null if neither resolver finds it
      */
     private Product resolveItem(String itemId) {
-        Product product = productService.findByIdentifier(itemId);
+        Product product = productResolver.apply(itemId);
         if (product != null) {
             return product;
         }
-        return accessoryService.findByIdentifier(itemId);
+        return accessoryResolver.apply(itemId);
     }
 }

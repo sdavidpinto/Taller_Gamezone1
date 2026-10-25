@@ -1,7 +1,5 @@
 package services;
 
-import model.Accessory;
-import model.Console;
 import model.Product;
 import model.Return;
 import model.Sale;
@@ -13,11 +11,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Capa de servicios para Return. Recibe ReturnRepository, SaleService,
- * ProductService, AccessoryService y WarrantyService por inyección de
- * dependencias (constructor). Además de registrar devoluciones y restaurar
- * stock, cancela la garantía asociada cuando el producto devuelto es una
- * consola, e incorpora ese reembolso adicional a la devolución.
+ * Service layer for Return. It receives ReturnRepository, SaleService,
+ * ProductService, AccessoryService and WarrantyService through constructor
+ * injection. Besides registering returns and restoring stock, it cancels the
+ * warranty of every returned item that has one and adds that refund to the return.
  */
 public class ReturnService {
 
@@ -49,18 +46,18 @@ public class ReturnService {
     }
 
     /**
-     * Registra una nueva devolución luego de validar la existencia de la
-     * venta, el plazo de 30 días para devoluciones, y que los productos
-     * solicitados realmente pertenezcan a la venta original. Si todo es
-     * válido, restaura el stock de los productos devueltos, cancela la
-     * garantía de cada consola devuelta, y persiste la nueva devolución.
+     * Registers a new return after validating that the sale exists, that the
+     * 30-day window has not expired and that every item belongs to the sale.
+     * It then restores the stock of the returned items, cancels the warranty of
+     * every item that has one (asking WarrantyService, not checking the item
+     * type) and persists the new return.
      *
-     * @param saleId el código de la venta original
-     * @param productIds los identificadores de los productos a devolver
-     * @param reason el motivo de la devolución
-     * @return la devolución recién creada
-     * @throws IllegalArgumentException si la venta no existe, si el plazo
-     *         de 30 días ya expiró, o si algún producto no pertenece a la venta
+     * @param saleId code of the original sale
+     * @param productIds identifiers of the items to return
+     * @param reason reason given for the return
+     * @return the newly created return
+     * @throws IllegalArgumentException if the sale does not exist, the 30-day
+     *         window has expired, or an item does not belong to the sale
      */
     public Return registerReturn(String saleId, List<String> productIds, String reason) {
         Sale sale = saleService.findByCode(saleId);
@@ -78,7 +75,7 @@ public class ReturnService {
         double warrantyRefund = 0;
         for (Product item : productsToReturn) {
             restoreStockFor(item);
-            if (item instanceof Console) {
+            if (warrantyService.findWarrantyByProduct(item.getIdentifier(), sale.getCode()) != null) {
                 warrantyRefund += warrantyService.cancelWarranties(item.getIdentifier(), sale.getCode());
             }
         }
@@ -92,17 +89,14 @@ public class ReturnService {
     }
 
     /**
-     * Restaura el stock de un ítem devuelto. Si el ítem es un Accessory,
-     * delega en AccessoryService; en caso contrario (un Product como
-     * VideoGame o Console), delega en ProductService. Esto evita duplicar
-     * la lógica de restauración de stock por cada tipo de ítem.
+     * Restores the stock of a returned item. AccessoryService.restoreStock
+     * answers true when the item is one of its accessories; otherwise the item
+     * is a product and ProductService restores it. No type check is needed.
      *
-     * @param item el ítem devuelto cuyo stock debe restaurarse
+     * @param item the returned item whose stock must be restored
      */
     private void restoreStockFor(Product item) {
-        if (item instanceof Accessory accessory) {
-            accessoryService.restoreStock(accessory.getIdentifier(), 1);
-        } else {
+        if (!accessoryService.restoreStock(item.getIdentifier(), 1)) {
             productService.restoreStock(item.getIdentifier(), 1);
         }
     }

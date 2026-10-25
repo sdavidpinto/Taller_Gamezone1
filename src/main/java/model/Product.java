@@ -70,11 +70,14 @@ public abstract class Product {
      * @return Una cadena de texto con los detalles del producto.
      */
     public abstract String getDescription();
+    
 
     /**
-     * Muestra la descripción del producto directamente en la consola.
-     */
-    public void mostrar() {
-        System.out.println(getDescription());
++     * Indica si este tipo de producto recibe garantía básica automática al
++     * venderse. Por defecto no; los tipos que sí la tienen (por ejemplo
++     * Console) sobrescriben este método.
++     */
+    public boolean requiresBasicWarranty() {
+        return false;
     }
 }
