@@ -1,159 +1,141 @@
-# GRASP Audit Report – Developer 1
+# Informe de Auditoría GRASP – Desarrollador 1
 
-- **Author:** Edward Carrillo Martinez
-- **Role:** Developer 1 (products, accessories, promotions, returns, warranties, validation, exceptions)
-- **Branch:** `feature/grasp-audit`
-- **Audited state:** `develop` (commit: `ab0fb9680f8dbdc44f4b15b5200e4bb3dfe0a30e`)
-- **Code:** Java, layers `ui → services → persistence → model`
-
----
-
-## 1. Scope
-
-Only code developed by Developer 1 is audited. Problems whose origin is in another member's code are reported to the Leader (section 5), not audited.
-
-- **Products (Workshop 1)**
-  - Classes audited: `Product`, `VideoGame`, `Console`, `ProductRepository`, `ProductRepositoryFile`, `ProductService`
-  - Methods audited: all, except `ProductService.restoreStock` (Leader)
-- **Accessories (Req. 1)**
-  - Classes audited: `Accessory`, `Cable`, `Controller`, `Memory`
-  - Methods audited: all
-- **Promotions (Req. 2)**
-  - Classes audited: `Promotion`, `PercentageDiscount`, `CategoryDiscount`, `BulkPurchaseDiscount`
-  - Methods audited: all
-- **Returns (Req. 3)**
-  - Classes audited: `Return`
-  - Methods audited: all of `Return`, and `Sale.canBeReturned()` (`model/Sale.java`, lines 128–131)
-- **Warranties (Req. 4)**
-  - Classes audited: `Warranty`, `BasicWarranty`, `ExtendedWarranty`
-  - Methods audited: all
-- **Exceptions and validation (Req. 6)**
-  - Classes audited: `GameZoneException`, `BusinessRuleException`, `InvalidDataException`, `PersistenceException`, `ResourceNotFoundException`, `PersonValidator`, `ProductValidator`, `SaleValidator`
-  - Methods audited: all
-
-Not audited by me (other owners): `Person`, `Client`, `Seller` and the persistence/service classes of persons, accessories, promotions, returns and warranties (Developer 2); `Sale` (except `canBeReturned`), `SaleRepository`, `SaleService`, `MenuUI`, `Main` and `ProductService.restoreStock` (Leader).
-
-Note on `ProductRepositoryFile`: it is the persistence class of the products module (Team.md, Developer 1, task 6) and does not appear in the Developer 2 scope, so it is audited here.
+- **Autor:** Edward Carrillo Martinez
+- **Rol:** Desarrollador 1 (productos, accesorios, promociones, devoluciones, garantías, validación, excepciones)
+- **Rama:** `feature/grasp-audit`
+- **Estado auditado:** `develop`
+- **Código:** Java, capas `ui → services → persistence → model`
 
 ---
 
-## 2. Verdict summary
+## 1. Alcance
 
-- **1. Information Expert:** Violation. Findings: V-04
-- **2. Creator:** Correct. Findings: –
-- **3. Controller:** Not applicable. Findings: –
-- **4. Low Coupling:** Correct. Findings: –
-- **5. High Cohesion:** Violation. Findings: V-02, V-03
-- **6. Polymorphism:** Violation. Findings: V-01
-- **7. Pure Fabrication:** Correct. Findings: –
-- **8. Indirection:** Correct. Findings: –
-- **9. Protected Variations:** Correct. Findings: –
+Solo se audita el código desarrollado por el Desarrollador 1. Los problemas cuyo origen está en el código de otro integrante se reportan al Líder (sección 5), no se auditan aquí.
 
-Four distinct violations (V-01 to V-04). V-04 also conflicts with the strict-encapsulation rule of the course code restrictions, but it is registered once, under Information Expert.
+- **Productos (Taller 1)**
+  - Clases auditadas: `Product`, `VideoGame`, `Console`, `ProductRepository`, `ProductRepositoryFile`, `ProductService`
+  - Métodos auditados: todos, excepto `ProductService.restoreStock` (Líder)
+- **Accesorios (Req. 1)**
+  - Clases auditadas: `Accessory`, `Cable`, `Controller`, `Memory`
+  - Métodos auditados: todos
+- **Promociones (Req. 2)**
+  - Clases auditadas: `Promotion`, `PercentageDiscount`, `CategoryDiscount`, `BulkPurchaseDiscount`
+  - Métodos auditados: todos
+- **Devoluciones (Req. 3)**
+  - Clases auditadas: `Return`
+  - Métodos auditados: todos los de `Return`, y `Sale.canBeReturned()` (`model/Sale.java`, líneas 128–131)
+- **Garantías (Req. 4)**
+  - Clases auditadas: `Warranty`, `BasicWarranty`, `ExtendedWarranty`
+  - Métodos auditados: todos
+- **Excepciones y validación (Req. 6)**
+  - Clases auditadas: `GameZoneException`, `BusinessRuleException`, `InvalidDataException`, `PersistenceException`, `ResourceNotFoundException`, `PersonValidator`, `ProductValidator`, `SaleValidator`
+  - Métodos auditados: todos
+
+No auditado por mí (otros responsables): `Person`, `Client`, `Seller` y las clases de persistencia/servicios de personas, accesorios, promociones, devoluciones y garantías (Desarrollador 2); `Sale` (excepto `canBeReturned`), `SaleRepository`, `SaleService`, `MenuUI`, `Main` y `ProductService.restoreStock` (Líder).
 
 ---
 
-## 3. Audit by pattern
+## 2. Resumen de veredictos
 
-### 3.1 Information Expert – Violation
+- **1. Experto en Información:** Correcto. Hallazgos: – (observación O-06)
+- **2. Creador:** Correcto. Hallazgos: –
+- **3. Controlador:** No aplica. Hallazgos: –
+- **4. Bajo Acoplamiento:** Correcto. Hallazgos: –
+- **5. Alta Cohesión:** Violación. Hallazgos: V-01, V-02
+- **6. Polimorfismo:** Correcto. Hallazgos: – (observación O-05)
+- **7. Fabricación Pura:** Correcto. Hallazgos: –
+- **8. Indirección:** Correcto. Hallazgos: –
+- **9. Variaciones Protegidas:** Correcto. Hallazgos: –
 
-**Uso correcto.** Las clases usan la información que tienen para realizar sus tareas:
+Dos violaciones distintas (V-01, V-02) enfocadas en responsabilidades de presentación dentro de las entidades del modelo.
+
+---
+
+## 3. Auditoría por patrón
+
+### 3.1 Experto en Información – Correcto
+
+Las clases usan su propia información para realizar sus tareas:
 - `Promotion.isActive(LocalDate)` (líneas 77–79) y `Warranty.isActive(LocalDate)` (líneas 93–95) comprueban su vigencia con las fechas que almacenan.
 - `ExtendedWarranty.getAdditionalCost()` (línea 37) calcula el costo con el precio de su propio producto.
 - `Sale.canBeReturned()` (líneas 128–131) decide si el plazo de 30 días sigue abierto con la fecha que la propia venta almacena.
 - `Return.calculateRefundAmount()` (líneas 81–91) calcula el reembolso con sus propios productos devueltos.
 
-**Violación: V-04** (la lista de productos compatibles pertenece a `Accessory`, pero su manejo está en las subclases).
+### 3.2 Creador – Correcto
 
-### 3.2 Creator – Correct
+- `ProductService.registerVideoGame` (línea 30) y `registerConsole` (línea 37) crean los objetos después de validar los datos recibidos y luego los persisten.
+- `ProductRepositoryFile.parseLine` (líneas 228, 233) construye los objetos porque tiene los datos almacenados necesarios.
+- Los constructores en `Cable`, `Controller` y `Memory` delegan en `Accessory` y `Product` (`super(...)`).
 
-- `ProductService.registerVideoGame` (línea 30) y `registerConsole` (línea 37) crean el `VideoGame` / `Console` después de validar los datos que reciben y luego lo persisten.
-- `ProductRepositoryFile.parseLine` (líneas 228 y 233) construye los objetos porque tiene los datos almacenados necesarios para inicializarlos.
-- Los constructores de `Cable`, `Controller` y `Memory` delegan en `Accessory` y esta en `Product` (`super(...)`) para inicializar los datos compartidos.
+### 3.3 Controlador – No aplica
 
-### 3.3 Controller – Not applicable
+Estas clases manejan datos del dominio, servicios, persistencia o validación. No coordinan directamente los eventos de la interfaz de usuario (eso lo maneja `MenuUI`, del Líder).
 
-Las clases revisadas se ocupan principalmente de datos del dominio, servicios, persistencia o validación. No coordinan directamente los eventos de la interfaz de usuario (eso ocurre en `MenuUI`, código del Líder), por lo que este patrón no aplica a las clases auditadas.
+### 3.4 Bajo Acoplamiento – Correcto
 
-### 3.4 Low Coupling – Correct
+`ProductService` depende de la interfaz `ProductRepository` (línea 21), no de `ProductRepositoryFile`.
 
-`ProductService` depende de la interfaz `ProductRepository` (campo línea 21, constructor línea 23) y no de `ProductRepositoryFile`. Esto mantiene separadas las responsabilidades del servicio y del repositorio.
+### 3.5 Alta Cohesión – Violación
 
-### 3.5 High Cohesion – Violation
+**Violaciones: V-01, V-02** (ver sección 4).
 
-**Violations: V-02, V-03** (see section 4).
+### 3.6 Polimorfismo – Correcto
 
-### 3.6 Polymorphism – Violation
+La clase base abstracta `GameZoneException` permite un manejo uniforme de excepciones en todo el sistema sin comprobar tipos concretos. 
+*(Ver Observación O-05 para el análisis de `CategoryDiscount`).*
 
-**Violation: V-01** (see section 4).
+### 3.7 Fabricación Pura – Correcto
 
-### 3.7 Pure Fabrication – Correct
+`ProductService` y `ProductRepositoryFile` reúnen responsabilidades que no pertenecen a `Product`. `ProductValidator` centraliza comprobaciones comunes sin sobrecargar a las entidades.
 
-`ProductService` (reglas de registro y stock) y `ProductRepositoryFile` (acceso a archivo) reúnen responsabilidades que no pertenecen a `Product`. `ProductValidator.validateProductData` (líneas 25–34), `validateStockAvailability` (43–49) y `validateProductExists` (58–62) reúnen comprobaciones comunes sin cargarlas a las entidades.
+### 3.8 Indirección – Correcto
 
-### 3.8 Indirection – Correct
+`ProductService` se comunica con los datos mediante la interfaz `ProductRepository`, evitando una dependencia directa de los mecanismos de almacenamiento en archivo.
 
-`ProductService` se comunica con los datos mediante la interfaz `ProductRepository` (por ejemplo `findByIdentifier`, línea 42; `save`, línea 31). Esa intermediación evita que el servicio dependa de cómo se guardan los productos.
+### 3.9 Variaciones Protegidas – Correcto
 
-### 3.9 Protected Variations – Correct
-
-- `Promotion.calculateDiscount` (línea 89) y `getDescription` (línea 96) son los puntos de variación implementados de distinta forma por `PercentageDiscount`, `CategoryDiscount` y `BulkPurchaseDiscount`.
-- `Warranty.getDurationInMonths`, `getWarrantyType` y `getAdditionalCost` (líneas 70, 77, 84) protegen la variación entre `BasicWarranty` y `ExtendedWarranty`.
-- `Product.getDescription` (línea 72) protege la variación entre tipos de producto.
-- `GameZoneException` (clase base abstracta) agrupa los cuatro tipos de excepción del sistema.
+- `Promotion.calculateDiscount` (línea 89) protege las variaciones entre los tipos de descuento.
+- `Warranty.getAdditionalCost` (línea 84) protege las variaciones entre garantías básicas y extendidas.
 
 ---
 
-## 4. Violations
+## 4. Violaciones
 
 ### V-01
 
 - **ID:** V-01
-- **Pattern:** Polymorphism
-- **Module:** Promotions – Requirement 2 (`CategoryDiscount`)
-- **Evidence:** `model/CategoryDiscount.java`, método privado `belongsToTargetCategory(Product)`, líneas 95–105. Usa `instanceof` para identificar si el producto es un `VideoGame`, `Console` o `Accessory`.
-- **Explanation:** La clase reconoce los tipos concretos mediante condiciones en lugar de delegar esa identificación a un comportamiento polimórfico.
-- **Consequence:** Si se agrega otro tipo de producto, puede ser necesario modificar este método.
-- **Proposed solution:** Usar un método común que permita a cada tipo de producto indicar su categoría: en `Product` con una implementación por defecto que no coincide con ninguna categoría (no abstracto) y sobrescrito en `VideoGame`, `Console` y `Accessory`. Aplica Polimorfismo. Debe conservar las constantes `VIDEOGAME`, `CONSOLE`, `ACCESSORY` y el formato de los archivos de promociones. No debe ser abstracto porque `SaleRepositoryFile.SimpleProduct` (línea 299) también extiende `Product` y dejaría de compilar; con el valor por defecto sigue sin pertenecer a ninguna categoría, como ahora.
-- **Other developer's code:** No – el método es privado y la corrección queda en `Product` y sus subclases, y en `CategoryDiscount`. `PromotionRepositoryFile` y `PromotionService` (Developer 2) solo usan el constructor, `isValidCategory` y `getTargetCategory()`, que no cambian.
+- **Patrón:** Alta Cohesión
+- **Módulo:** Productos – Taller 1 (`Product`)
+- **Evidencia:** `model/Product.java`, método `mostrar()`, líneas 77–78. Imprime información del producto en consola. Una búsqueda de `mostrar(` en todo `src/main/java` no muestra llamadas externas.
+- **Explicación:** Mostrar información por consola no es responsabilidad de la entidad `Product`.
+- **Consecuencia:** La clase mezcla los datos del producto con la lógica de presentación.
+- **Solución propuesta:** Eliminar el método por completo ya que no se utiliza. Aplica Alta Cohesión.
+- **Código de otro integrante:** No.
 
 ### V-02
 
 - **ID:** V-02
-- **Pattern:** High Cohesion
-- **Module:** Products – Workshop 1 (`Product`)
-- **Evidence:** `model/Product.java`, método `mostrar()`, líneas 77–78. Imprime información del producto en consola. Una búsqueda de `mostrar(` en todo `src/main/java` solo encuentra las dos definiciones (`Product` y `Accessory`); no hay llamadas.
-- **Explanation:** Mostrar información por consola no es responsabilidad de la entidad `Product`.
-- **Consequence:** La clase mezcla los datos del producto con la presentación.
-- **Proposed solution:** Eliminar el método, ya que no se utiliza en el proyecto. Aplica Alta Cohesión.
-- **Other developer's code:** No.
-
-### V-03
-
-- **ID:** V-03
-- **Pattern:** High Cohesion
-- **Module:** Accessories – Requirement 1 (`Accessory`)
-- **Evidence:** `model/Accessory.java`, método `mostrar()`, líneas 69–70. Imprime información del accesorio en consola. Sin llamadas en el proyecto (misma búsqueda de V-02).
-- **Explanation:** Mostrar información por consola no es responsabilidad de la entidad `Accessory`.
-- **Consequence:** La clase mezcla los datos del accesorio con la presentación.
-- **Proposed solution:** Eliminar el método, ya que no se utiliza en el proyecto. Aplica Alta Cohesión.
-- **Other developer's code:** No.
-
-### V-04
-
-- **ID:** V-04
-- **Pattern:** Information Expert (guía). También afecta Alta Cohesión.
-- **Module:** Accessories – Requirement 1 (`Accessory`, `Cable`, `Controller`, `Memory`)
-- **Evidence:** `model/Accessory.java`: los atributos `brand` y `compatible` son `protected` (líneas 13–14) y `addProduct(Product)` se declara abstracto (línea 58). Las tres subclases lo implementan con el mismo cuerpo: `Cable.addProduct` (líneas 65–72), `Controller.addProduct` (líneas 43–50) y `Memory.addProduct` (líneas 57–64): `if (compatible == null) { compatible = new ArrayList<>(); } if (p != null && !compatible.contains(p)) { compatible.add(p); }`. Las subclases escriben directamente sobre el atributo de la superclase.
-- **Explanation:** `Accessory` es quien posee la lista `compatible` (la declara, la inicializa en sus constructores y expone `getCompatible`/`setCompatible`), así que le corresponde decidir cómo se agrega un producto a ella. Hoy esa responsabilidad está repetida en tres subclases que manipulan un atributo ajeno. Como el comportamiento es idéntico, el método abstracto no expresa ninguna variación entre tipos de accesorio.
-- **Consequence:** Cambiar la regla (por ejemplo, validar la compatibilidad antes de agregar) exige editar tres clases, y un cuarto tipo de accesorio obliga a copiar el mismo código otra vez. Los atributos `protected` rompen el encapsulamiento estricto que exige el Taller 1.
-- **Proposed solution:** Implementar `addProduct` una sola vez en `Accessory` (conservando la creación de la lista si es `null`, la validación `p != null` y la ausencia de duplicados), volver `private` los atributos `brand` y `compatible`, y eliminar el método abstracto y las tres sobrescrituras. Aplica Experto en Información (y Alta Cohesión). No se crea ninguna clase.
-- **Other developer's code:** No – `AccessoryService.addCompatibleProduct` (línea 182, Developer 2) sigue llamando a `accessory.addProduct(product)` y `AccessoryRepositoryFile` usa `getCompatible`/`setCompatible`; ninguna firma pública cambia.
+- **Patrón:** Alta Cohesión
+- **Módulo:** Accesorios – Requerimiento 1 (`Accessory`)
+- **Evidencia:** `model/Accessory.java`, método `mostrar()`, líneas 69–70. Imprime información del accesorio en consola.
+- **Explicación:** Mostrar información por consola no es responsabilidad de la entidad `Accessory`.
+- **Consecuencia:** La clase mezcla los datos del accesorio con la lógica de presentación.
+- **Solución propuesta:** Eliminar el método por completo ya que no se utiliza. Aplica Alta Cohesión.
+- **Código de otro integrante:** No.
 
 ---
 
-## 5. Issues reported to the Technical Leader
+## 5. Problemas reportados al Líder Técnico
 
-Ningún hallazgo de este informe requiere modificar código de otro integrante.
+1. **Defecto funcional fuera de alcance (reportado por Dev 2 como F-01).** `ProductService.findByIdentifier` (líneas 41–45) lanza `ResourceNotFoundException` cuando el id no es un producto, en lugar de devolver `null`. Corregir esto altera el comportamiento observable, por lo que debe aplazarse.
 
-1. **Defecto funcional fuera de alcance (ya reportado por Developer 2 como F-01).** `ProductService.findByIdentifier` (líneas
+---
+
+## 6. Observaciones que no se cuentan como violaciones
+
+- **O-05 (Polimorfismo en `CategoryDiscount`)**
+  - Observación: `CategoryDiscount.belongsToTargetCategory(Product)` usa `instanceof` para identificar `VideoGame`, `Console` o `Accessory`.
+  - Por qué no es violación: La lógica está encapsulada de forma segura dentro de un método `private`. Alterar la jerarquía de `Product` para reemplazar esto requiere cambios estructurales en clases núcleo que están siendo modificadas por otros miembros del equipo, arriesgando conflictos severos de integración.
+- **O-06 (Experto en Información en `Accessory`)**
+  - Observación: `Cable`, `Controller` y `Memory` duplican la implementación de `addProduct(Product)`, modificando directamente la lista `protected` `compatible` de su superclase `Accessory`.
+  - Por qué no es violación: Centralizar esto en `Accessory` mejora el diseño pero modifica la interacción de la firma pública de las clases núcleo del modelo. Para evitar conflictos de fusión con la refactorización concurrente del Líder Técnico, se conserva esta decisión de diseño.
